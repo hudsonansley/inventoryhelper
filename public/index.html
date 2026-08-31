@@ -1,170 +1,757 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Welcome to Firebase Hosting</title>
-
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/12.18.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/12.18.0/firebase-auth-compat.js"></script>
-    <script
-      defer
-      src="/__/firebase/12.18.0/firebase-database-compat.js"
-    ></script>
-    <script
-      defer
-      src="/__/firebase/12.18.0/firebase-firestore-compat.js"
-    ></script>
-    <script
-      defer
-      src="/__/firebase/12.18.0/firebase-functions-compat.js"
-    ></script>
-    <script
-      defer
-      src="/__/firebase/12.18.0/firebase-messaging-compat.js"
-    ></script>
-    <script
-      defer
-      src="/__/firebase/12.18.0/firebase-storage-compat.js"
-    ></script>
-    <script
-      defer
-      src="/__/firebase/12.18.0/firebase-analytics-compat.js"
-    ></script>
-    <script
-      defer
-      src="/__/firebase/12.18.0/firebase-remote-config-compat.js"
-    ></script>
-    <script
-      defer
-      src="/__/firebase/12.18.0/firebase-performance-compat.js"
-    ></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
-
-    <style media="screen">
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Scan or Enter</title>
+    <style>
+      :root {
+        --ink: #14181d;
+        --paper: #eef0f2;
+        --line: #c3c9d0;
+        --signal: #ff5a1f;
+        --signal-dk: #d8410c;
+        --sku: #1f6fff;
+        --sku-dk: #1454d8;
+        --ok: #10b06a;
+        --pad: #ffffff;
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
       body {
-        background: #eceff1;
-        color: rgba(0, 0, 0, 0.87);
-        font-family: Roboto, Helvetica, Arial, sans-serif;
         margin: 0;
-        padding: 0;
+        height: 100%;
+        background: var(--paper);
+        color: var(--ink);
+        font-family:
+          ui-sans-serif,
+          -apple-system,
+          "SF Pro Text",
+          system-ui,
+          sans-serif;
+        overscroll-behavior: none;
       }
-      #message {
-        background: white;
-        max-width: 360px;
-        margin: 100px auto 16px;
-        padding: 32px 24px;
-        border-radius: 3px;
+      body {
+        display: flex;
+        flex-direction: column;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
       }
-      #message h2 {
-        color: #ffa100;
-        font-weight: bold;
-        font-size: 16px;
-        margin: 0 0 8px;
+      .screen {
+        flex: 1;
+        display: none;
+        flex-direction: column;
+        min-height: 0;
       }
-      #message h1 {
-        font-size: 22px;
-        font-weight: 300;
-        color: rgba(0, 0, 0, 0.6);
-        margin: 0 0 16px;
+      .screen.active {
+        display: flex;
       }
-      #message p {
-        line-height: 140%;
-        margin: 16px 0 24px;
-        font-size: 14px;
+
+      header.bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 2px solid var(--ink);
       }
-      #message a {
-        display: block;
+      header.bar .back {
+        border: none;
+        background: none;
+        font-size: 26px;
+        line-height: 1;
+        padding: 4px 8px;
+        margin: -4px -8px;
+        cursor: pointer;
+        color: var(--ink);
+      }
+      header.bar h1 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+
+      /* ---- Mode select ---- */
+      #select {
+        justify-content: center;
+        padding: 24px 20px;
+        gap: 18px;
+      }
+      #select .lead {
+        font-size: 15px;
+        color: #556;
         text-align: center;
-        background: #039be5;
-        text-transform: uppercase;
-        text-decoration: none;
-        color: white;
-        padding: 16px;
-        border-radius: 4px;
+        margin: 0 0 6px;
       }
-      #message,
-      #message a {
-        box-shadow:
-          0 1px 3px rgba(0, 0, 0, 0.12),
-          0 1px 2px rgba(0, 0, 0, 0.24);
+      .choice {
+        border: 2px solid var(--ink);
+        border-radius: 18px;
+        background: var(--pad);
+        padding: 28px 22px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        cursor: pointer;
+        text-align: left;
+        width: 100%;
+        transition: transform 0.06s ease;
       }
-      #load {
-        color: rgba(0, 0, 0, 0.4);
+      .choice:active {
+        transform: scale(0.985);
+      }
+      .choice .glyph {
+        flex: 0 0 76px;
+        height: 76px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .choice .txt b {
+        display: block;
+        font-size: 21px;
+        font-weight: 800;
+      }
+      .choice .txt span {
+        display: block;
+        font-size: 13.5px;
+        color: #667;
+        margin-top: 3px;
+      }
+      .choice.scan {
+        box-shadow: inset 0 0 0 5px rgba(255, 90, 31, 0.12);
+      }
+      .choice.scan .txt b {
+        color: var(--signal-dk);
+      }
+      .choice.sku {
+        box-shadow: inset 0 0 0 5px rgba(31, 111, 255, 0.12);
+      }
+      .choice.sku .txt b {
+        color: var(--sku-dk);
+      }
+
+      .bars {
+        width: 72px;
+        height: 60px;
+        display: flex;
+        align-items: stretch;
+        gap: 3px;
+      }
+      .bars i {
+        background: var(--ink);
+        border-radius: 1px;
+      }
+      .bars i:nth-child(1) {
+        flex: 2;
+      }
+      .bars i:nth-child(2) {
+        flex: 1;
+      }
+      .bars i:nth-child(3) {
+        flex: 3;
+      }
+      .bars i:nth-child(4) {
+        flex: 1;
+      }
+      .bars i:nth-child(5) {
+        flex: 1;
+      }
+      .bars i:nth-child(6) {
+        flex: 2;
+      }
+      .bars i:nth-child(7) {
+        flex: 1;
+      }
+      .bars i:nth-child(8) {
+        flex: 3;
+      }
+      .bars i:nth-child(9) {
+        flex: 1;
+      }
+      .skuglyph {
+        font-size: 27px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        border: 3px solid var(--sku-dk);
+        color: var(--sku-dk);
+        border-radius: 12px;
+        padding: 10px 12px;
+      }
+
+      /* ---- Scanner ---- */
+      #scan {
+        position: relative;
+        background: #000;
+      }
+      #scan .stage {
+        position: relative;
+        flex: 1;
+        overflow: hidden;
+      }
+      #video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .reticle {
+        position: absolute;
+        left: 50%;
+        top: 46%;
+        transform: translate(-50%, -50%);
+        width: 80%;
+        max-width: 440px;
+        aspect-ratio: 5/3;
+        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.5);
+        border-radius: 16px;
+      }
+      .reticle span {
+        position: absolute;
+        width: 34px;
+        height: 34px;
+        border: 4px solid #fff;
+      }
+      .reticle .tl {
+        top: -2px;
+        left: -2px;
+        border-right: none;
+        border-bottom: none;
+        border-top-left-radius: 14px;
+      }
+      .reticle .tr {
+        top: -2px;
+        right: -2px;
+        border-left: none;
+        border-bottom: none;
+        border-top-right-radius: 14px;
+      }
+      .reticle .bl {
+        bottom: -2px;
+        left: -2px;
+        border-right: none;
+        border-top: none;
+        border-bottom-left-radius: 14px;
+      }
+      .reticle .br {
+        bottom: -2px;
+        right: -2px;
+        border-left: none;
+        border-top: none;
+        border-bottom-right-radius: 14px;
+      }
+      .reticle.locked span {
+        border-color: var(--ok);
+        transition: border-color 0.15s;
+      }
+      #scan .hint {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 16px 18px calc(20px + env(safe-area-inset-bottom));
+        color: #fff;
+        font-size: 14px;
+        text-align: center;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent);
+      }
+      #scan .status {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        padding: 7px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .camfail {
+        margin: auto;
+        max-width: 340px;
+        padding: 28px;
+        text-align: center;
+        color: #fff;
+      }
+      .camfail p {
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      /* ---- SKU pad ---- */
+      #sku {
+        padding: 18px;
+        gap: 16px;
+      }
+      .display {
+        border: 2px solid var(--ink);
+        border-radius: 14px;
+        background: var(--pad);
+        padding: 20px;
+        font-size: 40px;
+        font-weight: 800;
+        letter-spacing: 6px;
+        text-align: center;
+        min-height: 82px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-variant-numeric: tabular-nums;
+      }
+      .display.empty {
+        color: #b6bcc3;
+        letter-spacing: 2px;
+        font-size: 20px;
+        font-weight: 600;
+      }
+      .countnote {
         text-align: center;
         font-size: 13px;
+        color: #667;
+        margin-top: -8px;
       }
-      @media (max-width: 600px) {
-        body,
-        #message {
-          margin-top: 0;
-          background: white;
-          box-shadow: none;
-        }
-        body {
-          border-top: 16px solid #ffa100;
-        }
+      .countnote.good {
+        color: var(--ok);
+        font-weight: 700;
+      }
+      .keys {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        flex: 1;
+      }
+      .key {
+        border: 2px solid var(--line);
+        border-radius: 14px;
+        background: var(--pad);
+        font-size: 28px;
+        font-weight: 700;
+        cursor: pointer;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 58px;
+        transition:
+          transform 0.05s ease,
+          background 0.1s;
+      }
+      .key:active {
+        transform: scale(0.95);
+        background: #e7ebf0;
+      }
+      .key.util {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      .key.enter {
+        grid-column: span 3;
+        background: var(--sku);
+        color: #fff;
+        border-color: var(--sku-dk);
+        font-size: 20px;
+        letter-spacing: 0.5px;
+      }
+      .key.enter:disabled {
+        background: #aeb9cc;
+        border-color: #aeb9cc;
+        color: #eef;
+        cursor: not-allowed;
+      }
+      .key.enter:active:not(:disabled) {
+        background: var(--sku-dk);
+      }
+
+      /* ---- Result ---- */
+      #result {
+        justify-content: center;
+        align-items: center;
+        padding: 28px;
+        text-align: center;
+        gap: 20px;
+      }
+      #result .kind {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #667;
+      }
+      #result .value {
+        font-size: clamp(34px, 12vw, 64px);
+        font-weight: 900;
+        letter-spacing: 2px;
+        word-break: break-all;
+        line-height: 1.05;
+        font-variant-numeric: tabular-nums;
+      }
+      #result .check {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: var(--ok);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 38px;
+      }
+      .again {
+        border: 2px solid var(--ink);
+        background: var(--ink);
+        color: #fff;
+        padding: 16px 34px;
+        border-radius: 999px;
+        font-size: 17px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .again:active {
+        transform: scale(0.97);
       }
     </style>
   </head>
   <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosing Setup Complete</h1>
-      <p>
-        You're seeing this because you've successfully setup Firebase Hosting.
-        Now it's time to go build something extraordinary!
-      </p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/"
-        >Open Hosting Documentation</a
+    <section id="select" class="screen active">
+      <p class="lead">Choose how to enter the item</p>
+      <button class="choice scan" data-go="scan" aria-label="Scan a barcode">
+        <span class="glyph"
+          ><span class="bars"
+            ><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+            ><i></i></span
+        ></span>
+        <span class="txt"
+          ><b>Scan barcode</b><span>Use the camera to read a UPC</span></span
+        >
+      </button>
+      <button class="choice sku" data-go="sku" aria-label="Enter a SKU number">
+        <span class="glyph"><span class="skuglyph">SKU</span></span>
+        <span class="txt"
+          ><b>Enter SKU</b><span>Type a 5 or 6 digit number</span></span
+        >
+      </button>
+    </section>
+
+    <section id="scan" class="screen">
+      <header
+        class="bar"
+        style="border-color: #333; background: #000; color: #fff"
       >
-    </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
+        <button
+          class="back"
+          data-go="select"
+          style="color: #fff"
+          aria-label="Back"
+        >
+          &lsaquo;
+        </button>
+        <h1>Scan UPC</h1>
+      </header>
+      <div class="stage" id="stage">
+        <video id="video" playsinline muted autoplay></video>
+        <div class="reticle" id="reticle">
+          <span class="tl"></span><span class="tr"></span
+          ><span class="bl"></span><span class="br"></span>
+        </div>
+        <div class="status" id="scanStatus">Starting camera&hellip;</div>
+        <div class="hint">Hold a UPC-A or UPC-E barcode inside the frame</div>
+      </div>
+    </section>
+
+    <section id="sku" class="screen">
+      <header class="bar">
+        <button class="back" data-go="select" aria-label="Back">
+          &lsaquo;
+        </button>
+        <h1>Enter SKU</h1>
+      </header>
+      <div class="display empty" id="skuDisplay">Tap the keys below</div>
+      <div class="countnote" id="skuNote">Enter 5 or 6 digits</div>
+      <div class="keys">
+        <button class="key" data-d="1">1</button>
+        <button class="key" data-d="2">2</button>
+        <button class="key" data-d="3">3</button>
+        <button class="key" data-d="4">4</button>
+        <button class="key" data-d="5">5</button>
+        <button class="key" data-d="6">6</button>
+        <button class="key" data-d="7">7</button>
+        <button class="key" data-d="8">8</button>
+        <button class="key" data-d="9">9</button>
+        <button class="key util" id="clearKey">Clear</button>
+        <button class="key" data-d="0">0</button>
+        <button class="key util" id="backKey">&#9003;</button>
+        <button class="key enter" id="enterKey" disabled>Enter</button>
+      </div>
+    </section>
+
+    <section id="result" class="screen">
+      <div class="check">&#10003;</div>
+      <div class="kind" id="resultKind">Scanned</div>
+      <div class="value" id="resultValue">&mdash;</div>
+      <button class="again" data-go="select">New entry</button>
+    </section>
 
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const loadEl = document.querySelector("#load");
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-
-        try {
-          let app = firebase.app();
-          let features = [
-            "auth",
-            "database",
-            "firestore",
-            "functions",
-            "messaging",
-            "storage",
-            "analytics",
-            "remoteConfig",
-            "performance",
-          ].filter((feature) => typeof app[feature] === "function");
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(", ")}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent =
-            "Error loading the Firebase SDK, check the console.";
+      (function () {
+        const screens = {
+          select: document.getElementById("select"),
+          scan: document.getElementById("scan"),
+          sku: document.getElementById("sku"),
+          result: document.getElementById("result"),
+        };
+        function show(name) {
+          Object.values(screens).forEach((s) => s.classList.remove("active"));
+          screens[name].classList.add("active");
         }
-      });
+        document.querySelectorAll("[data-go]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const dest = btn.getAttribute("data-go");
+            if (dest !== "scan") stopScanner();
+            if (dest === "scan") startScanner();
+            if (dest === "sku") resetSku();
+            show(dest);
+          });
+        });
+        function showResult(kind, value) {
+          document.getElementById("resultKind").textContent = kind;
+          document.getElementById("resultValue").textContent = value;
+          show("result");
+        }
+
+        /* ---------------- Scanner ----------------
+     Primary: native BarcodeDetector (built into Chrome).
+     Fallback: ZXing UMD, loaded lazily only if BarcodeDetector is missing.
+  */
+        const video = document.getElementById("video");
+        const reticle = document.getElementById("reticle");
+        const statusEl = document.getElementById("scanStatus");
+        let stream = null;
+        let rafId = null;
+        let running = false;
+        let zxingReader = null;
+
+        const UPC_FORMATS = ["upc_a", "upc_e"];
+
+        async function startScanner() {
+          if (running) return;
+          running = true;
+          reticle.classList.remove("locked");
+          statusEl.textContent = "Starting camera\u2026";
+
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            return cameraFail(
+              "This browser can\u2019t access the camera. Use Chrome over HTTPS.",
+            );
+          }
+
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+              },
+              audio: false,
+            });
+          } catch (e) {
+            const denied =
+              e && (e.name === "NotAllowedError" || e.name === "SecurityError");
+            return cameraFail(
+              denied
+                ? "Camera permission was denied. Click the camera icon in Chrome\u2019s address bar to allow it, then reload."
+                : "Couldn\u2019t start the camera. Make sure the page is on HTTPS and no other app is using the camera.",
+            );
+          }
+
+          video.srcObject = stream;
+          try {
+            await video.play();
+          } catch (_) {}
+
+          if ("BarcodeDetector" in window) {
+            try {
+              const supported =
+                await window.BarcodeDetector.getSupportedFormats();
+              const formats = UPC_FORMATS.filter((f) => supported.includes(f));
+              if (formats.length) {
+                const detector = new window.BarcodeDetector({ formats });
+                statusEl.textContent = "Point at a UPC barcode";
+                nativeLoop(detector);
+                return;
+              }
+            } catch (_) {
+              /* fall through to ZXing */
+            }
+          }
+          startZxing();
+        }
+
+        function nativeLoop(detector) {
+          const tick = async () => {
+            if (!running) return;
+            try {
+              const codes = await detector.detect(video);
+              const hit = codes.find((c) => UPC_FORMATS.includes(c.format));
+              if (hit) return onDecoded(hit.rawValue);
+            } catch (_) {
+              /* transient decode error, keep going */
+            }
+            rafId = requestAnimationFrame(tick);
+          };
+          rafId = requestAnimationFrame(tick);
+        }
+
+        function startZxing() {
+          statusEl.textContent = "Loading scanner\u2026";
+          loadZxing(
+            () => {
+              try {
+                const hints = new Map();
+                hints.set(ZXingBrowser.DecodeHintType.POSSIBLE_FORMATS, [
+                  ZXingBrowser.BarcodeFormat.UPC_A,
+                  ZXingBrowser.BarcodeFormat.UPC_E,
+                ]);
+                hints.set(ZXingBrowser.DecodeHintType.TRY_HARDER, true);
+                zxingReader = new ZXingBrowser.BrowserMultiFormatReader(hints);
+                statusEl.textContent = "Point at a UPC barcode";
+                zxingReader.decodeFromStream(stream, video, (res) => {
+                  if (!running || !res) return;
+                  const fmt = res.getBarcodeFormat();
+                  if (
+                    fmt === ZXingBrowser.BarcodeFormat.UPC_A ||
+                    fmt === ZXingBrowser.BarcodeFormat.UPC_E
+                  ) {
+                    onDecoded(res.getText());
+                  }
+                });
+              } catch (e) {
+                cameraFail(
+                  "Scanner failed to initialize. Reload the page and try again.",
+                );
+              }
+            },
+            () => {
+              cameraFail(
+                "Couldn\u2019t load the scanning engine (offline?). Your browser also lacks the native scanner. Use SKU entry instead.",
+              );
+            },
+          );
+        }
+
+        // Loads ZXing UMD and normalizes it to a stable global: window.ZXingBrowser
+        let zxingLoading = false;
+        function loadZxing(onReady, onError) {
+          if (window.ZXingBrowser) return onReady();
+          if (window.ZXing) {
+            window.ZXingBrowser = window.ZXing;
+            return onReady();
+          }
+          if (zxingLoading) return;
+          zxingLoading = true;
+          const s = document.createElement("script");
+          s.src =
+            "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
+          s.onload = () => {
+            window.ZXingBrowser = window.ZXingBrowser || window.ZXing;
+            if (
+              window.ZXingBrowser &&
+              window.ZXingBrowser.BrowserMultiFormatReader
+            )
+              onReady();
+            else onError();
+          };
+          s.onerror = onError;
+          document.head.appendChild(s);
+        }
+
+        function onDecoded(value) {
+          if (!running) return;
+          reticle.classList.add("locked");
+          stopScanner();
+          if (navigator.vibrate) navigator.vibrate(60);
+          showResult("Scanned UPC", value);
+        }
+
+        function stopScanner() {
+          running = false;
+          if (rafId) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+          }
+          if (zxingReader) {
+            try {
+              zxingReader.reset();
+            } catch (_) {}
+            zxingReader = null;
+          }
+          if (stream) {
+            stream.getTracks().forEach((t) => t.stop());
+            stream = null;
+          }
+          video.srcObject = null;
+        }
+
+        function cameraFail(message) {
+          stopScanner();
+          const stage = document.getElementById("stage");
+          stage.innerHTML =
+            '<div class="camfail"><p>' +
+            message +
+            "</p>" +
+            '<button class="again" id="failBack" style="background:#fff;color:#000;border-color:#fff;">Go back</button></div>';
+          document
+            .getElementById("failBack")
+            .addEventListener("click", () => location.reload());
+        }
+
+        /* ---------------- SKU pad ---------------- */
+        const displayEl = document.getElementById("skuDisplay");
+        const noteEl = document.getElementById("skuNote");
+        const enterKey = document.getElementById("enterKey");
+        let sku = "";
+        function renderSku() {
+          if (sku.length === 0) {
+            displayEl.textContent = "Tap the keys below";
+            displayEl.classList.add("empty");
+          } else {
+            displayEl.textContent = sku;
+            displayEl.classList.remove("empty");
+          }
+          const valid = sku.length === 5 || sku.length === 6;
+          enterKey.disabled = !valid;
+          noteEl.textContent = valid ? "\u2713 Ready" : "Enter 5 or 6 digits";
+          noteEl.className = "countnote" + (valid ? " good" : "");
+        }
+        function resetSku() {
+          sku = "";
+          renderSku();
+        }
+        document.querySelectorAll(".key[data-d]").forEach((k) => {
+          k.addEventListener("click", () => {
+            if (sku.length >= 6) return;
+            sku += k.getAttribute("data-d");
+            renderSku();
+          });
+        });
+        document.getElementById("backKey").addEventListener("click", () => {
+          sku = sku.slice(0, -1);
+          renderSku();
+        });
+        document.getElementById("clearKey").addEventListener("click", resetSku);
+        enterKey.addEventListener("click", () => {
+          if (sku.length === 5 || sku.length === 6)
+            showResult("Entered SKU", sku);
+        });
+        renderSku();
+      })();
     </script>
   </body>
 </html>
