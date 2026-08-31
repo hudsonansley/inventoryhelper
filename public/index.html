@@ -520,10 +520,29 @@
             show(dest);
           });
         });
+        var LOOKUP_BASE =
+          "https://merchants.cityhive.net/#!/669a8879e510ce28a1f0f031/inventory?_text=";
+        var LOOKUP_TAB = "cityhive_inventory"; // fixed name -> reuses the same tab every time
+
         function showResult(kind, value) {
-          document.getElementById("resultKind").textContent = kind;
-          document.getElementById("resultValue").textContent = value;
-          show("result");
+          var url = LOOKUP_BASE + encodeURIComponent(value);
+          // Open (or reuse) the named tab. The named target makes repeat scans land
+          // in the same tab instead of piling up new ones.
+          var tab = window.open(url, LOOKUP_TAB);
+          if (tab) {
+            // If the tab already existed, setting location forces it to the new value
+            // (some browsers won't re-navigate a named target on their own).
+            try {
+              tab.location.href = url;
+            } catch (e) {}
+            try {
+              tab.focus();
+            } catch (e) {}
+          }
+          // Reset back to the start so the next item can be scanned or keyed in.
+          stopScanner();
+          resetSku();
+          show("select");
         }
 
         /* ---------------- Scanner ----------------
@@ -543,6 +562,8 @@
         async function startScanner() {
           if (running) return;
           running = true;
+          lastCandidate = null;
+          candidateCount = 0;
           reticle.classList.remove("locked");
           statusEl.textContent = "Starting camera\u2026";
 
@@ -600,7 +621,7 @@
             try {
               const codes = await detector.detect(video);
               const hit = codes.find((c) => UPC_FORMATS.includes(c.format));
-              if (hit) return onDecoded(hit.rawValue);
+              if (hit && considerReading(hit.rawValue, hit.format)) return;
             } catch (_) {
               /* transient decode error, keep going */
             }
@@ -625,12 +646,13 @@
                 zxingReader.decodeFromStream(stream, video, (res) => {
                   if (!running || !res) return;
                   const fmt = res.getBarcodeFormat();
-                  if (
-                    fmt === ZXingBrowser.BarcodeFormat.UPC_A ||
-                    fmt === ZXingBrowser.BarcodeFormat.UPC_E
-                  ) {
-                    onDecoded(res.getText());
-                  }
+                  const label =
+                    fmt === ZXingBrowser.BarcodeFormat.UPC_A
+                      ? "upc_a"
+                      : fmt === ZXingBrowser.BarcodeFormat.UPC_E
+                        ? "upc_e"
+                        : null;
+                  if (label) considerReading(res.getText(), label);
                 });
               } catch (e) {
                 cameraFail(
@@ -670,6 +692,32 @@
           };
           s.onerror = onError;
           document.head.appendChild(s);
+        }
+
+        /* --- Light stability check ---
+     The native detector is reliable, so we don't second-guess its values with
+     checksums (which risk rejecting valid reads, especially UPC-E variants).
+     We only require the SAME value on 2 consecutive frames as cheap insurance
+     against a rare single-frame glitch. Set REQUIRED_HITS to 1 for instant reads. */
+        const REQUIRED_HITS = 2;
+        let lastCandidate = null;
+        let candidateCount = 0;
+
+        // Returns true when a reading is confirmed and accepted.
+        function considerReading(value, format) {
+          if (!running) return false;
+          if (!value || !/^\d+$/.test(value)) return false; // digits only, no other filtering
+          if (value === lastCandidate) {
+            candidateCount++;
+          } else {
+            lastCandidate = value;
+            candidateCount = 1;
+          }
+          if (candidateCount >= REQUIRED_HITS) {
+            onDecoded(value);
+            return true;
+          }
+          return false;
         }
 
         function onDecoded(value) {
