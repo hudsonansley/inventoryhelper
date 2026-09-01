@@ -384,50 +384,7 @@
 
       /* ---- Result ---- */
       #result {
-        justify-content: center;
-        align-items: center;
-        padding: 28px;
-        text-align: center;
-        gap: 20px;
-      }
-      #result .kind {
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-        color: #667;
-      }
-      #result .value {
-        font-size: clamp(34px, 12vw, 64px);
-        font-weight: 900;
-        letter-spacing: 2px;
-        word-break: break-all;
-        line-height: 1.05;
-        font-variant-numeric: tabular-nums;
-      }
-      #result .check {
-        width: 68px;
-        height: 68px;
-        border-radius: 50%;
-        background: var(--ok);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 38px;
-      }
-      .again {
-        border: 2px solid var(--ink);
-        background: var(--ink);
-        color: #fff;
-        padding: 16px 34px;
-        border-radius: 999px;
-        font-size: 17px;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .again:active {
-        transform: scale(0.97);
+        background: var(--paper);
       }
     </style>
   </head>
@@ -447,7 +404,7 @@
       <button class="choice sku" data-go="sku" aria-label="Enter a SKU number">
         <span class="glyph"><span class="skuglyph">SKU</span></span>
         <span class="txt"
-          ><b>Enter SKU 3</b><span>Type a 5 or 6 digit number</span></span
+          ><b>Enter SKU</b><span>Type a 5 or 6 digit number</span></span
         >
       </button>
     </section>
@@ -512,20 +469,12 @@
       </div>
     </section>
 
-    <section id="result" class="screen">
-      <div class="check">&#10003;</div>
-      <div class="kind" id="resultKind">Scanned</div>
-      <div class="value" id="resultValue">&mdash;</div>
-      <button class="again" data-go="select">New entry</button>
-    </section>
-
     <script>
       (function () {
         const screens = {
           select: document.getElementById("select"),
           scan: document.getElementById("scan"),
           sku: document.getElementById("sku"),
-          result: document.getElementById("result"),
         };
         function show(name) {
           Object.values(screens).forEach((s) => s.classList.remove("active"));
@@ -547,25 +496,20 @@
         function showResult(kind, value) {
           var url = LOOKUP_BASE + encodeURIComponent(value);
           // Reuse the named tab. Because consecutive URLs differ only in the hash
-          // fragment, browsers would treat it as the same document and NOT reload.
-          // Sending about:blank first clears it, so the next assignment is a real
-          // navigation that reloads the inventory page with the new value.
+          // fragment, the browser treats it as the same document and won't reload.
+          // Blanking the tab first forces a real navigation to the new value.
           var tab = window.open("about:blank", LOOKUP_TAB);
           if (tab) {
-            try {
-              // Let about:blank settle, then navigate — this makes it a real reload.
-              setTimeout(function () {
-                try {
-                  tab.location.href = url;
-                  tab.focus();
-                } catch (e) {}
-              }, 50);
-            } catch (e) {}
+            setTimeout(function () {
+              try {
+                tab.location.href = url;
+                tab.focus();
+              } catch (e) {}
+            }, 50);
           } else {
-            // Popup blocked: fall back to opening directly in a new tab.
+            // Popup blocked: fall back to a direct open.
             window.open(url, LOOKUP_TAB);
           }
-          // Reset back to the start so the next item can be scanned or keyed in.
           stopScanner();
           resetSku();
           show("select");
