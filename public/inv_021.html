@@ -178,6 +178,14 @@
         color: var(--sku-dk);
       }
 
+      .choice.search {
+        box-shadow: inset 0 0 0 5px rgba(16, 176, 106, 0.12);
+      }
+
+      .choice.search .txt b {
+        color: var(--ok);
+      }
+
       .bars {
         width: 72px;
         height: 60px;
@@ -424,6 +432,27 @@
         background: var(--sku-dk);
       }
 
+      /* Compact SKU action buttons */
+      #sku .keys {
+        display: flex;
+        flex: 0 0 auto;
+        gap: 10px;
+        margin-top: 0;
+      }
+      #sku .keys .key {
+        min-height: 46px;
+        height: 46px;
+        font-size: 16px;
+        border-radius: 12px;
+      }
+      #sku .keys #clearKey {
+        flex: 0 0 88px;
+      }
+      #sku .keys #enterKey {
+        flex: 1;
+        grid-column: auto;
+      }
+
       /* ---- Result ---- */
       #result {
         background: var(--paper);
@@ -456,7 +485,17 @@
           ><b>Enter SKU</b><span>Type a 5 or 6 digit number</span></span
         >
       </button>
-      <p class="build">Build 0019</p>
+      <button
+        class="choice search"
+        data-go="search"
+        aria-label="Search inventory"
+      >
+        <span class="glyph"><span class="skuglyph">⌕</span></span>
+        <span class="txt"
+          ><b>Search</b><span>Search by name or other text</span></span
+        >
+      </button>
+      <p class="build">Build 0021</p>
     </section>
 
     <section id="scan" class="screen">
@@ -507,6 +546,32 @@
       </div>
     </section>
 
+    <section id="search" class="screen">
+      <header class="bar">
+        <button class="back" data-go="select" aria-label="Back">
+          &lsaquo;
+        </button>
+        <h1>Search</h1>
+      </header>
+      <form
+        id="searchForm"
+        style="padding: 18px; display: flex; flex-direction: column; gap: 16px"
+      >
+        <input
+          class="display"
+          id="searchDisplay"
+          type="search"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck="false"
+          placeholder="Search"
+          aria-label="Search inventory"
+        />
+        <button class="key enter" id="searchKey" type="submit">Search</button>
+      </form>
+    </section>
+
     <section id="sku" class="screen">
       <header class="bar">
         <button class="back" data-go="select" aria-label="Back">
@@ -517,27 +582,20 @@
       <input
         class="display"
         id="skuDisplay"
-        inputmode="none"
+        type="tel"
+        inputmode="numeric"
+        pattern="[0-9]*"
         autocomplete="off"
         spellcheck="false"
-        placeholder="Tap the keys below"
+        placeholder="Enter SKU"
         aria-label="SKU number"
       />
       <div class="countnote" id="skuNote">Enter 5 to 12 digits</div>
       <div class="keys">
-        <button class="key" data-d="1">1</button>
-        <button class="key" data-d="2">2</button>
-        <button class="key" data-d="3">3</button>
-        <button class="key" data-d="4">4</button>
-        <button class="key" data-d="5">5</button>
-        <button class="key" data-d="6">6</button>
-        <button class="key" data-d="7">7</button>
-        <button class="key" data-d="8">8</button>
-        <button class="key" data-d="9">9</button>
-        <button class="key util" id="clearKey">Clear</button>
-        <button class="key" data-d="0">0</button>
-        <button class="key util" id="backKey">&#9003;</button>
-        <button class="key enter" id="enterKey" disabled>Enter</button>
+        <button class="key util" id="clearKey" type="button">Clear</button>
+        <button class="key enter" id="enterKey" type="button" disabled>
+          Enter
+        </button>
       </div>
     </section>
 
@@ -547,6 +605,7 @@
           select: document.getElementById("select"),
           scan: document.getElementById("scan"),
           sku: document.getElementById("sku"),
+          search: document.getElementById("search"),
         };
         function show(name) {
           Object.values(screens).forEach((s) => s.classList.remove("active"));
@@ -558,7 +617,10 @@
             if (dest !== "scan") stopScanner();
             if (dest === "scan") startScanner();
             if (dest === "sku") resetSku();
+            if (dest === "search") resetSearch();
             show(dest);
+            if (dest === "sku") setTimeout(() => displayEl.focus(), 100);
+            if (dest === "search") setTimeout(() => searchDisplay.focus(), 100);
           });
         });
         var LOOKUP_BASE =
@@ -947,58 +1009,49 @@
             .addEventListener("click", () => location.reload());
         }
 
-        /* ---------------- SKU pad ---------------- */
+        /* ---------------- Native keyboard inputs ---------------- */
         const MIN_DIGITS = 5,
           MAX_DIGITS = 12;
         const displayEl = document.getElementById("skuDisplay");
         const noteEl = document.getElementById("skuNote");
         const enterKey = document.getElementById("enterKey");
+        const searchDisplay = document.getElementById("searchDisplay");
+        const searchForm = document.getElementById("searchForm");
 
-        // Keep the on-screen pad as the only input source: block the OS keyboard,
-        // but still allow the field to hold a caret for insertion-point placement.
-        displayEl.addEventListener("focus", () => {
-          displayEl.readOnly = false;
+        // SKU uses the device's native numeric/phone-style keyboard.
+        displayEl.addEventListener("input", () => {
+          // Keep only digits and enforce the existing 5–12 digit rule.
+          const cleaned = displayEl.value
+            .replace(/\D/g, "")
+            .slice(0, MAX_DIGITS);
+          if (displayEl.value !== cleaned) displayEl.value = cleaned;
+          refresh();
         });
-        displayEl.addEventListener("beforeinput", (e) => e.preventDefault()); // no typing/paste
-        displayEl.addEventListener("keydown", (e) => e.preventDefault());
 
-        // Dynamic font sizing: shrink until the text fits the field's width.
+        displayEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            submitSku();
+          }
+        });
+
         function fitFont() {
           const max = 40,
             min = 16;
           displayEl.style.setProperty("--sku-fs", max + "px");
-          // available inner width (minus horizontal padding)
           const cs = getComputedStyle(displayEl);
-          const avail =
-            displayEl.clientWidth -
-            parseFloat(cs.paddingLeft) -
-            parseFloat(cs.paddingRight);
           let size = max;
-          // scrollWidth grows with content; step down until it fits or we hit min
           while (size > min && displayEl.scrollWidth > displayEl.clientWidth) {
             size -= 2;
             displayEl.style.setProperty("--sku-fs", size + "px");
           }
         }
 
-        function caret() {
-          // returns [start, end] clamped to the current value length
-          const v = displayEl.value;
-          let s = displayEl.selectionStart,
-            e = displayEl.selectionEnd;
-          if (s == null) s = v.length;
-          if (e == null) e = v.length;
-          return [s, e];
-        }
-
-        function setCaret(pos) {
-          displayEl.setSelectionRange(pos, pos);
-        }
-
         function refresh() {
           const v = displayEl.value;
           const valid = v.length >= MIN_DIGITS && v.length <= MAX_DIGITS;
           enterKey.disabled = !valid;
+
           if (v.length === 0) noteEl.textContent = "Enter 5 to 12 digits";
           else if (v.length < MIN_DIGITS)
             noteEl.textContent =
@@ -1009,64 +1062,42 @@
               " needed";
           else
             noteEl.textContent = "\u2713 Ready \u2022 " + v.length + " digits";
+
           noteEl.className = "countnote" + (valid ? " good" : "");
           fitFont();
         }
 
-        function insertDigit(d) {
-          let v = displayEl.value;
-          if (v.length >= MAX_DIGITS) return; // cap at 12
-          let [s, e] = caret();
-          displayEl.value = v.slice(0, s) + d + v.slice(e);
-          setCaret(s + 1);
-          refresh();
-        }
-
-        function backspace() {
-          let v = displayEl.value;
-          let [s, e] = caret();
-          if (s !== e) {
-            // delete a selection
-            displayEl.value = v.slice(0, s) + v.slice(e);
-            setCaret(s);
-          } else if (s > 0) {
-            // delete char before caret
-            displayEl.value = v.slice(0, s - 1) + v.slice(s);
-            setCaret(s - 1);
-          }
-          refresh();
-        }
-
         function resetSku() {
           displayEl.value = "";
-          displayEl.blur();
           refresh();
         }
 
-        document.querySelectorAll(".key[data-d]").forEach((k) => {
-          // pointerdown so the field doesn't lose focus/caret to the button
-          k.addEventListener("pointerdown", (ev) => {
-            ev.preventDefault();
-            insertDigit(k.getAttribute("data-d"));
-          });
-        });
-        document
-          .getElementById("backKey")
-          .addEventListener("pointerdown", (ev) => {
-            ev.preventDefault();
-            backspace();
-          });
-        document
-          .getElementById("clearKey")
-          .addEventListener("pointerdown", (ev) => {
-            ev.preventDefault();
-            resetSku();
-          });
-        enterKey.addEventListener("click", () => {
-          const v = displayEl.value;
+        function submitSku() {
+          const v = displayEl.value.replace(/\D/g, "");
           if (v.length >= MIN_DIGITS && v.length <= MAX_DIGITS)
             showResult("Entered SKU", v);
+        }
+
+        enterKey.addEventListener("click", submitSku);
+
+        document.getElementById("clearKey").addEventListener("click", () => {
+          displayEl.value = "";
+          refresh();
+          displayEl.focus();
         });
+
+        // Search uses a normal text input, so the OS supplies the native
+        // alphanumeric keyboard on phones/tablets.
+        searchForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const value = searchDisplay.value.trim();
+          if (value) showResult("Search", value);
+        });
+
+        function resetSearch() {
+          searchDisplay.value = "";
+        }
+
         window.addEventListener("resize", fitFont);
         refresh();
       })();

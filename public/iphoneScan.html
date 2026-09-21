@@ -178,6 +178,14 @@
         color: var(--sku-dk);
       }
 
+      .choice.search {
+        box-shadow: inset 0 0 0 5px rgba(16, 176, 106, 0.12);
+      }
+
+      .choice.search .txt b {
+        color: var(--ok);
+      }
+
       .bars {
         width: 72px;
         height: 60px;
@@ -316,9 +324,74 @@
         font-weight: 600;
         white-space: nowrap;
       }
+      .diagnostics {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        z-index: 20;
+        color: #fff;
+        font-size: 11px;
+        text-align: left;
+        background: rgba(0, 0, 0, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 10px;
+        padding: 7px 9px;
+        max-height: 42%;
+        overflow: auto;
+      }
+      .diagnostics summary {
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 12px;
+      }
+      .diag-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .diag-copy {
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 5px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .diag-copy:active {
+        background: rgba(255, 255, 255, 0.25);
+      }
+      .diag-copy-status {
+        font-size: 11px;
+        color: #6dffb0;
+      }
+      .diagnostics pre {
+        margin: 7px 0 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 180px;
+        overflow: auto;
+        font:
+          11px/1.35 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          Consolas,
+          monospace;
+      }
       .camfail {
-        margin: auto;
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.88);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         max-width: 340px;
+        margin: 0 auto;
         padding: 28px;
         text-align: center;
         color: #fff;
@@ -414,6 +487,23 @@
         font-size: 20px;
         letter-spacing: 0.5px;
       }
+
+      /* Compact native-SKU actions: Clear and Enter sit together under the field. */
+      #sku .keys {
+        flex: 0 0 auto;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      #sku .key {
+        min-height: 48px;
+        font-size: 16px;
+      }
+
+      #sku .key.enter {
+        grid-column: auto;
+        font-size: 16px;
+      }
       .key.enter:disabled {
         background: #aeb9cc;
         border-color: #aeb9cc;
@@ -456,7 +546,17 @@
           ><b>Enter SKU</b><span>Type a 5 or 6 digit number</span></span
         >
       </button>
-      <p class="build">Build 0019</p>
+      <button
+        class="choice search"
+        data-go="search"
+        aria-label="Search inventory"
+      >
+        <span class="glyph"><span class="skuglyph">⌕</span></span>
+        <span class="txt"
+          ><b>Search</b><span>Search by name or other text</span></span
+        >
+      </button>
+      <p class="build">Build 0030 · self-correcting-probe</p>
     </section>
 
     <section id="scan" class="screen">
@@ -504,7 +604,43 @@
         <div class="status" id="scanStatus">Starting camera&hellip;</div>
         <div class="camlabel" id="camLabel"></div>
         <div class="hint">Hold a UPC-A or UPC-E barcode inside the frame</div>
+        <details class="diagnostics" id="diagnostics">
+          <summary>Scanner diagnostics</summary>
+          <div class="diag-toolbar">
+            <button type="button" id="copyDiagBtn" class="diag-copy">
+              Copy log
+            </button>
+            <span id="copyDiagStatus" class="diag-copy-status"></span>
+          </div>
+          <pre id="diagnosticLog"></pre>
+        </details>
       </div>
+    </section>
+
+    <section id="search" class="screen">
+      <header class="bar">
+        <button class="back" data-go="select" aria-label="Back">
+          &lsaquo;
+        </button>
+        <h1>Search</h1>
+      </header>
+      <form
+        id="searchForm"
+        style="padding: 18px; display: flex; flex-direction: column; gap: 16px"
+      >
+        <input
+          class="display"
+          id="searchDisplay"
+          type="search"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck="false"
+          placeholder="Search"
+          aria-label="Search inventory"
+        />
+        <button class="key enter" id="searchKey" type="submit">Search</button>
+      </form>
     </section>
 
     <section id="sku" class="screen">
@@ -517,27 +653,20 @@
       <input
         class="display"
         id="skuDisplay"
-        inputmode="none"
+        type="tel"
+        inputmode="numeric"
+        pattern="[0-9]*"
         autocomplete="off"
         spellcheck="false"
-        placeholder="Tap the keys below"
+        placeholder="Enter SKU"
         aria-label="SKU number"
       />
       <div class="countnote" id="skuNote">Enter 5 to 12 digits</div>
       <div class="keys">
-        <button class="key" data-d="1">1</button>
-        <button class="key" data-d="2">2</button>
-        <button class="key" data-d="3">3</button>
-        <button class="key" data-d="4">4</button>
-        <button class="key" data-d="5">5</button>
-        <button class="key" data-d="6">6</button>
-        <button class="key" data-d="7">7</button>
-        <button class="key" data-d="8">8</button>
-        <button class="key" data-d="9">9</button>
-        <button class="key util" id="clearKey">Clear</button>
-        <button class="key" data-d="0">0</button>
-        <button class="key util" id="backKey">&#9003;</button>
-        <button class="key enter" id="enterKey" disabled>Enter</button>
+        <button class="key util" id="clearKey" type="button">Clear</button>
+        <button class="key enter" id="enterKey" type="button" disabled>
+          Enter
+        </button>
       </div>
     </section>
 
@@ -547,6 +676,7 @@
           select: document.getElementById("select"),
           scan: document.getElementById("scan"),
           sku: document.getElementById("sku"),
+          search: document.getElementById("search"),
         };
         function show(name) {
           Object.values(screens).forEach((s) => s.classList.remove("active"));
@@ -558,7 +688,10 @@
             if (dest !== "scan") stopScanner();
             if (dest === "scan") startScanner();
             if (dest === "sku") resetSku();
+            if (dest === "search") resetSearch();
             show(dest);
+            if (dest === "sku") setTimeout(() => displayEl.focus(), 100);
+            if (dest === "search") setTimeout(() => searchDisplay.focus(), 100);
           });
         });
         var LOOKUP_BASE =
@@ -587,6 +720,7 @@
         let rafId = null;
         let running = false;
         let zxingReader = null;
+        let zxingHeartbeat = null;
 
         // Camera choice for the OPTIONAL flip button. null = default (rear by hint).
         // This is deliberately kept out of the core start/scan path so it can never
@@ -618,7 +752,18 @@
         // throw OverconstrainedError on cameras that can't meet it.
         function openById(deviceId) {
           return navigator.mediaDevices.getUserMedia({
-            video: { deviceId: { exact: deviceId } },
+            video: {
+              deviceId: { exact: deviceId },
+              // `ideal` is a preference the browser can fall short of without
+              // throwing (unlike `exact`, which caused OverconstrainedError
+              // earlier). 720p is a widely-used sweet spot for 1D barcode
+              // decoding: enough horizontal detail to resolve UPC bars, but
+              // lighter to process per-frame than 1080p on older hardware
+              // (iPhone X's A11 chip) — very high resolution can actually
+              // hurt real-time decode reliability, not help it.
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
             audio: false,
           });
         }
@@ -637,7 +782,7 @@
           // 3) Labels not available yet: open any camera to unlock permission, then
           //    re-enumerate (labels appear post-grant) and switch to the back one.
           const tmp = await navigator.mediaDevices.getUserMedia({
-            video: true,
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: false,
           });
           await refreshDeviceList();
@@ -648,13 +793,124 @@
                 ? tmp.getVideoTracks()[0].getSettings().deviceId
                 : null;
             if (activeId !== backId) {
-              // stop the temp stream and reopen on the back camera
+              // Stop the temp stream and reopen on the back camera. iOS
+              // (AVFoundation) can take a beat to release a camera session;
+              // reopening immediately is a known cause of a stuck/black
+              // camera there, so give it a short gap before the new request.
               tmp.getTracks().forEach((t) => t.stop());
+              diag("Switching from temp camera to back camera…");
+              await new Promise((r) => setTimeout(r, 200));
               return await openById(backId);
             }
           }
           // Couldn't identify a back camera; use whatever we opened.
           return tmp;
+        }
+
+        // --- Scanner diagnostics ---
+        const diagnosticLogEl = document.getElementById("diagnosticLog");
+        let diagnosticStartedAt = Date.now();
+        let diagnosticLastFrameLog = 0;
+        let diagnosticNativeFrames = 0;
+
+        function diag(message) {
+          const elapsed = ((Date.now() - diagnosticStartedAt) / 1000).toFixed(
+            1,
+          );
+          const line = "[" + elapsed + "s] " + message;
+          if (diagnosticLogEl) {
+            diagnosticLogEl.textContent +=
+              (diagnosticLogEl.textContent ? "\n" : "") + line;
+            diagnosticLogEl.scrollTop = diagnosticLogEl.scrollHeight;
+          }
+          try {
+            console.log("[Scanner]", line);
+          } catch (_) {}
+        }
+
+        // Copy the diagnostics log to the clipboard so it can be pasted into a
+        // message/email — the practical way to get it off an iPhone with no
+        // console access. Tries the modern Clipboard API first, then falls
+        // back to a hidden-textarea + execCommand for older iOS Safari.
+        const copyDiagBtn = document.getElementById("copyDiagBtn");
+        const copyDiagStatus = document.getElementById("copyDiagStatus");
+        if (copyDiagBtn) {
+          copyDiagBtn.addEventListener("click", async () => {
+            const text = diagnosticLogEl ? diagnosticLogEl.textContent : "";
+            let ok = false;
+            if (navigator.clipboard && window.isSecureContext) {
+              try {
+                await navigator.clipboard.writeText(text);
+                ok = true;
+              } catch (_) {
+                ok = false;
+              }
+            }
+            if (!ok) {
+              try {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                ta.style.position = "fixed";
+                ta.style.left = "-9999px";
+                ta.style.top = "0";
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                ok = document.execCommand("copy");
+                document.body.removeChild(ta);
+              } catch (_) {
+                ok = false;
+              }
+            }
+            if (copyDiagStatus) {
+              copyDiagStatus.textContent = ok
+                ? "Copied!"
+                : "Couldn\u2019t copy \u2014 select the text manually";
+              clearTimeout(copyDiagStatus._t);
+              copyDiagStatus._t = setTimeout(() => {
+                copyDiagStatus.textContent = "";
+              }, 2500);
+            }
+          });
+        }
+
+        function describeError(e) {
+          if (!e) return "unknown error";
+          return [
+            e.name || "Error",
+            e.message || "",
+            e.constraint ? "constraint=" + e.constraint : "",
+          ]
+            .filter(Boolean)
+            .join(": ");
+        }
+
+        // Safety net: catch anything that fails OUTSIDE our own try/catch
+        // blocks (e.g. inside ZXing's internals) and log it. On iOS there's
+        // no console access in the field, so an uncaught rejection would
+        // otherwise be a silent, unexplained failure.
+        window.addEventListener("error", (ev) => {
+          diag(
+            "window error: " +
+              (ev.message || describeError(ev.error)) +
+              (ev.filename ? " @ " + ev.filename + ":" + ev.lineno : ""),
+          );
+        });
+        window.addEventListener("unhandledrejection", (ev) => {
+          diag("unhandled promise rejection: " + describeError(ev.reason));
+        });
+
+        function logEnvironment() {
+          diag("iOS/browser: " + navigator.userAgent);
+          diag("BarcodeDetector: " + ("BarcodeDetector" in window));
+          diag("mediaDevices: " + !!navigator.mediaDevices);
+          diag(
+            "getUserMedia: " +
+              !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+          );
+          diag("online: " + navigator.onLine);
+          diag("secure context: " + window.isSecureContext);
+          diag("page origin: " + location.origin);
         }
 
         async function startScanner() {
@@ -664,6 +920,9 @@
           candidateCount = 0;
           reticle.classList.remove("locked");
           statusEl.textContent = "Starting camera\u2026";
+          const oldOverlay = document.getElementById("camFailOverlay");
+          if (oldOverlay) oldOverlay.remove();
+          logEnvironment();
 
           if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             return cameraFail(
@@ -682,8 +941,21 @@
           // OverconstrainedError on cameras that can't hit them, which was killing
           // the back-camera request.
           try {
+            diag("Requesting camera stream…");
             stream = await acquireStream();
+            const track =
+              stream && stream.getVideoTracks
+                ? stream.getVideoTracks()[0]
+                : null;
+            if (track) {
+              const settings = track.getSettings ? track.getSettings() : {};
+              diag("Camera track: " + (track.label || "(no label)"));
+              diag("Camera settings: " + JSON.stringify(settings));
+            } else {
+              diag("Camera stream opened, but no video track was found.");
+            }
           } catch (e) {
+            diag("Camera error: " + describeError(e));
             const denied =
               e && (e.name === "NotAllowedError" || e.name === "SecurityError");
             return cameraFail(
@@ -696,7 +968,20 @@
           video.srcObject = stream;
           try {
             await video.play();
-          } catch (_) {}
+            diag(
+              "Video playing: " + video.videoWidth + "x" + video.videoHeight,
+            );
+          } catch (e) {
+            diag("video.play() error: " + describeError(e));
+          }
+          setTimeout(() => {
+            diag(
+              "Video dimensions after 1s: " +
+                video.videoWidth +
+                "x" +
+                video.videoHeight,
+            );
+          }, 1000);
           try {
             await refreshDeviceList();
             showCamLabel();
@@ -704,18 +989,32 @@
 
           if ("BarcodeDetector" in window) {
             try {
+              diag("Native BarcodeDetector is present.");
               const supported =
                 await window.BarcodeDetector.getSupportedFormats();
+              diag("Native supported formats: " + supported.join(", "));
               const formats = UPC_FORMATS.filter((f) => supported.includes(f));
+              diag(
+                "Native UPC formats selected: " +
+                  (formats.join(", ") || "(none)"),
+              );
               if (formats.length) {
                 const detector = new window.BarcodeDetector({ formats });
                 statusEl.textContent = "Point at a UPC barcode";
+                diag("Using native BarcodeDetector.");
                 nativeLoop(detector);
                 return;
               }
-            } catch (_) {
-              /* fall through to ZXing */
+              diag(
+                "Native detector has no requested UPC formats; using ZXing fallback.",
+              );
+            } catch (e) {
+              diag("Native BarcodeDetector failed: " + describeError(e));
+              diag("Falling back to ZXing.");
             }
+          } else {
+            diag("Native BarcodeDetector is NOT available.");
+            diag("Using ZXing fallback.");
           }
           startZxing();
         }
@@ -725,12 +1024,23 @@
           const tick = async () => {
             if (!running) return;
             try {
+              diagnosticNativeFrames++;
               const codes = await detector.detect(video);
+              if (codes.length && Date.now() - diagnosticLastFrameLog > 500) {
+                diagnosticLastFrameLog = Date.now();
+                diag("Native detector saw " + codes.length + " code(s).");
+              }
               for (const c of codes) {
                 // Filter by the VALUE shape, not the format string (which varies by
                 // browser and was silently rejecting valid reads). A UPC is 12 digits
                 // (UPC-A) or 8/6 digits (UPC-E). This also naturally ignores 2D codes,
                 // whose payloads aren't bare short digit strings.
+                diag(
+                  "Native candidate: value=" +
+                    (c.rawValue || "(empty)") +
+                    " format=" +
+                    (c.format || "(unknown)"),
+                );
                 if (
                   isUpcShape(c.rawValue) &&
                   considerReading(c.rawValue, c.format)
@@ -760,34 +1070,31 @@
         function startZxing() {
           statusEl.textContent = "Loading scanner\u2026";
           loadZxing(
-            () => {
+            async () => {
               try {
                 const hints = new Map();
-                hints.set(ZXingBrowser.DecodeHintType.POSSIBLE_FORMATS, [
-                  ZXingBrowser.BarcodeFormat.UPC_A,
-                  ZXingBrowser.BarcodeFormat.UPC_E,
-                ]);
                 hints.set(ZXingBrowser.DecodeHintType.TRY_HARDER, true);
                 zxingReader = new ZXingBrowser.BrowserMultiFormatReader(hints);
                 statusEl.textContent = "Point at a UPC barcode";
-                zxingReader.decodeFromStream(stream, video, (res) => {
-                  if (!running || !res) return;
-                  const fmt = res.getBarcodeFormat();
-                  const label =
-                    fmt === ZXingBrowser.BarcodeFormat.UPC_A
-                      ? "upc_a"
-                      : fmt === ZXingBrowser.BarcodeFormat.UPC_E
-                        ? "upc_e"
-                        : null;
-                  if (label) considerReading(res.getText(), label);
-                });
+
+                // decodeFromStream/decodeContinuously feed the library a live
+                // <video> element directly. zxing-js's own issue tracker
+                // states plainly: "Use of the video element is not supported
+                // in Safari on iOS." That matches everything we've seen: a
+                // healthy scan loop, perfect visual barcode quality, and a
+                // 100% miss rate no amount of resolution/format tuning fixed.
+                // Fix: capture frames onto OUR OWN canvas manually, and
+                // decode from that canvas instead of from <video> directly.
+                startZxingManualCanvasLoop();
               } catch (e) {
+                diag("ZXing init failed: " + describeError(e));
                 cameraFail(
                   "Scanner failed to initialize. Reload the page and try again.",
                 );
               }
             },
             () => {
+              diag("Failed to load the ZXing library (network/offline).");
               cameraFail(
                 "Couldn\u2019t load the scanning engine (offline?). Your browser also lacks the native scanner. Use SKU entry instead.",
               );
@@ -795,10 +1102,260 @@
           );
         }
 
+        function startZxingManualCanvasLoop() {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+          // Field data so far: "decode(canvasElement)" didn't throw a
+          // TypeError so our probe locked onto it — but it then failed EVERY
+          // frame with IndexSizeError, a native DOM exception from a
+          // malformed getImageData-style call (almost always a 0/NaN-sized
+          // region). Likely cause: that convenience method probably expects
+          // a <video>/<img> element (reading .videoWidth/.naturalWidth) and
+          // mishandles a bare <canvas>, which only has .width/.height. Two
+          // fixes: (1) widen "this candidate is wrong" beyond just TypeError
+          // to include DOMExceptions/RangeErrors too, since those are just as
+          // clearly malformed calls, not real "no barcode" results; and
+          // (2) if a locked candidate keeps failing structurally at runtime,
+          // automatically drop it and move to the next one, instead of
+          // staying stuck on a bad first guess.
+          function isWrongUsageError(e) {
+            if (!e) return false;
+            if (e instanceof TypeError || e instanceof RangeError) return true;
+            if (
+              typeof DOMException !== "undefined" &&
+              e instanceof DOMException
+            )
+              return true;
+            if (
+              e.name &&
+              /IndexSizeError|InvalidStateError|NotSupportedError|SecurityError/.test(
+                e.name,
+              )
+            )
+              return true;
+            return false;
+          }
+
+          function buildCandidates() {
+            const list = [];
+            const hasBitmapClasses = !!(
+              ZXingBrowser.HTMLCanvasElementLuminanceSource &&
+              ZXingBrowser.BinaryBitmap &&
+              ZXingBrowser.HybridBinarizer
+            );
+            function makeBitmap(cv) {
+              const ls = new ZXingBrowser.HTMLCanvasElementLuminanceSource(cv);
+              return new ZXingBrowser.BinaryBitmap(
+                new ZXingBrowser.HybridBinarizer(ls),
+              );
+            }
+            // 1) The library's internal core reader's low-level decode —
+            //    the classic Reader.decode(BinaryBitmap) contract, built via
+            //    a class specifically designed to read a CANVAS's .width/
+            //    .height (unlike the generic element-based method below).
+            //    Tried first now, since it's the most purpose-built for what
+            //    we're actually handing it.
+            if (
+              hasBitmapClasses &&
+              zxingReader.reader &&
+              typeof zxingReader.reader.decode === "function"
+            ) {
+              list.push({
+                name: "reader.decode(BinaryBitmap)",
+                fn: (cv) => zxingReader.reader.decode(makeBitmap(cv)),
+              });
+            }
+            // 2) Same BinaryBitmap contract, via the top-level object.
+            if (hasBitmapClasses && typeof zxingReader.decode === "function") {
+              list.push({
+                name: "decode(BinaryBitmap)",
+                fn: (cv) => zxingReader.decode(makeBitmap(cv)),
+              });
+            }
+            // 3) Pass the canvas element directly. Demoted to last resort:
+            //    field evidence suggests this path mishandles canvas input
+            //    specifically (see note above).
+            if (typeof zxingReader.decode === "function") {
+              list.push({
+                name: "decode(canvasElement)",
+                fn: (cv) => zxingReader.decode(cv),
+              });
+            }
+            // 4) Guaranteed-documented fallback: data-URL + image round trip.
+            //    Slower, but its argument shape is unambiguous.
+            list.push({
+              name: "decodeFromImageUrl(dataURL)",
+              fn: async (cv) =>
+                await zxingReader.decodeFromImageUrl(
+                  cv.toDataURL("image/jpeg", 0.85),
+                ),
+            });
+            return list;
+          }
+          const candidates = buildCandidates();
+          diag(
+            "ZXing decode candidates to probe (in order): " +
+              candidates.map((c) => c.name).join(", "),
+          );
+
+          let candidateIndex = 0;
+          let lockedCandidate = null;
+          let lockedFailCount = 0;
+          const MAX_LOCKED_FAILS = 5; // structural fails before trying the next candidate
+
+          let cbCount = 0;
+          let errCounts = {};
+          let lastNonNullFormat = "";
+          clearInterval(zxingHeartbeat);
+          zxingHeartbeat = setInterval(() => {
+            if (!running) return;
+            const errSummary = Object.keys(errCounts)
+              .map((k) => k + "x" + errCounts[k])
+              .join(",");
+            diag(
+              "ZXing heartbeat: attempts " +
+                cbCount +
+                " in last 2s" +
+                (lockedCandidate ? "; using=" + lockedCandidate.name : "") +
+                (errSummary ? "; misses=" + errSummary : "") +
+                (lastNonNullFormat ? "; sawFormat=" + lastNonNullFormat : ""),
+            );
+            cbCount = 0;
+            errCounts = {};
+          }, 2000);
+
+          function dropLockedCandidate(reason) {
+            diag(
+              'ZXing candidate "' +
+                lockedCandidate.name +
+                '" kept failing structurally (' +
+                reason +
+                "); trying next candidate.",
+            );
+            candidateIndex++;
+            lockedCandidate = null;
+            lockedFailCount = 0;
+          }
+
+          async function decodeCanvasOnce() {
+            if (lockedCandidate) {
+              try {
+                return await lockedCandidate.fn(canvas);
+              } catch (e) {
+                if (isWrongUsageError(e)) {
+                  lockedFailCount++;
+                  if (lockedFailCount >= MAX_LOCKED_FAILS) {
+                    dropLockedCandidate(describeError(e));
+                    // fall through to probing below on this same call
+                  } else {
+                    throw e;
+                  }
+                } else {
+                  throw e; // genuine "no barcode this frame" — normal
+                }
+              }
+            }
+            // Probe remaining candidates starting at candidateIndex.
+            for (; candidateIndex < candidates.length; candidateIndex++) {
+              const c = candidates[candidateIndex];
+              try {
+                const res = await c.fn(canvas);
+                lockedCandidate = c;
+                lockedFailCount = 0;
+                diag("ZXing candidate WORKS (no error): " + c.name);
+                return res;
+              } catch (e) {
+                if (isWrongUsageError(e)) {
+                  diag(
+                    "ZXing candidate FAILED (" +
+                      (e && e.name ? e.name : "Error") +
+                      " \u2014 wrong usage): " +
+                      c.name +
+                      " :: " +
+                      describeError(e) +
+                      (e.stack ? " | stack: " + e.stack.slice(0, 200) : ""),
+                  );
+                  continue;
+                }
+                lockedCandidate = c;
+                lockedFailCount = 0;
+                diag("ZXing candidate ACCEPTED (usage correct): " + c.name);
+                throw e;
+              }
+            }
+            throw new Error(
+              "All ZXing decode calling conventions failed structurally.",
+            );
+          }
+
+          let busy = false;
+          let lastAttempt = 0;
+          const MIN_INTERVAL_MS = 150; // throttle: a few attempts/sec is plenty
+
+          const tick = async (ts) => {
+            if (!running) return;
+            if (
+              !busy &&
+              video.readyState >= 2 &&
+              video.videoWidth > 0 &&
+              ts - lastAttempt >= MIN_INTERVAL_MS
+            ) {
+              busy = true;
+              lastAttempt = ts;
+              try {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                cbCount++;
+                const res = await decodeCanvasOnce();
+                if (running && res) {
+                  const fmt = res.getBarcodeFormat();
+                  lastNonNullFormat = String(fmt);
+                  const label =
+                    fmt === ZXingBrowser.BarcodeFormat.UPC_A
+                      ? "upc_a"
+                      : fmt === ZXingBrowser.BarcodeFormat.UPC_E
+                        ? "upc_e"
+                        : fmt === ZXingBrowser.BarcodeFormat.EAN_13
+                          ? "ean_13"
+                          : fmt === ZXingBrowser.BarcodeFormat.EAN_8
+                            ? "ean_8"
+                            : null;
+                  diag(
+                    "ZXing candidate: value=" +
+                      (res.getText() || "(empty)") +
+                      " format=" +
+                      label,
+                  );
+                  if (label && isUpcShape(res.getText())) {
+                    busy = false;
+                    if (considerReading(res.getText(), label)) return;
+                  }
+                }
+              } catch (e) {
+                const key = describeError(e).slice(0, 40) || "?";
+                errCounts[key] = (errCounts[key] || 0) + 1;
+              }
+              busy = false;
+            }
+            rafId = requestAnimationFrame(tick);
+          };
+          rafId = requestAnimationFrame(tick);
+        }
+
         // --- Optional camera helpers (flip button only; never in the scan path) ---
         async function refreshDeviceList() {
           const all = await navigator.mediaDevices.enumerateDevices();
           videoDevices = all.filter((d) => d.kind === "videoinput");
+          diag(
+            "Cameras found: " +
+              videoDevices.length +
+              " — " +
+              videoDevices
+                .map((d, i) => i + ":" + (d.label || "(no label)"))
+                .join(" | "),
+          );
         }
         function currentDeviceId() {
           const t =
@@ -833,7 +1390,11 @@
         // Loads ZXing UMD and normalizes it to a stable global: window.ZXingBrowser
         let zxingLoading = false;
         function loadZxing(onReady, onError) {
-          if (window.ZXingBrowser) return onReady();
+          diag("Loading ZXing library…");
+          if (window.ZXingBrowser) {
+            diag("ZXing already available.");
+            return onReady();
+          }
           if (window.ZXing) {
             window.ZXingBrowser = window.ZXing;
             return onReady();
@@ -868,14 +1429,26 @@
         // Returns true when a reading is confirmed and accepted.
         function considerReading(value, format) {
           if (!running) return false;
-          if (!value || !/^\d+$/.test(value)) return false; // digits only, no other filtering
+          if (!value || !/^\d+$/.test(value)) {
+            diag("Rejected candidate (not digits): " + value);
+            return false;
+          }
           if (value === lastCandidate) {
             candidateCount++;
           } else {
             lastCandidate = value;
             candidateCount = 1;
           }
+          diag(
+            "Candidate accepted for hit " +
+              candidateCount +
+              "/" +
+              REQUIRED_HITS +
+              ": " +
+              value,
+          );
           if (candidateCount >= REQUIRED_HITS) {
+            diag("Barcode confirmed: " + value);
             onDecoded(value);
             return true;
           }
@@ -884,6 +1457,7 @@
 
         function onDecoded(value) {
           if (!running) return;
+          diag("onDecoded(): " + value);
           reticle.classList.add("locked");
           stopScanner();
           if (navigator.vibrate) navigator.vibrate(60);
@@ -895,6 +1469,10 @@
           if (rafId) {
             cancelAnimationFrame(rafId);
             rafId = null;
+          }
+          if (zxingHeartbeat) {
+            clearInterval(zxingHeartbeat);
+            zxingHeartbeat = null;
           }
           if (zxingReader) {
             try {
@@ -935,70 +1513,75 @@
           });
 
         function cameraFail(message) {
+          diag("cameraFail: " + message);
           stopScanner();
+          // IMPORTANT: don't replace stage.innerHTML — that used to delete the
+          // diagnostics panel at the exact moment it's most needed. Overlay the
+          // failure message instead, and auto-expand diagnostics so the reason
+          // is visible without an extra tap.
           const stage = document.getElementById("stage");
-          stage.innerHTML =
-            '<div class="camfail"><p>' +
+          let overlay = document.getElementById("camFailOverlay");
+          if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.id = "camFailOverlay";
+            overlay.className = "camfail";
+            stage.appendChild(overlay);
+          }
+          overlay.innerHTML =
+            "<p>" +
             message +
             "</p>" +
-            '<button class="again" id="failBack" style="background:#fff;color:#000;border-color:#fff;">Go back</button></div>';
+            '<button class="again" id="failBack" style="background:#fff;color:#000;border-color:#fff;">Go back</button>';
           document
             .getElementById("failBack")
             .addEventListener("click", () => location.reload());
+          const diagsEl = document.getElementById("diagnostics");
+          if (diagsEl) diagsEl.open = true;
         }
 
-        /* ---------------- SKU pad ---------------- */
+        /* ---------------- Native keyboard inputs ---------------- */
         const MIN_DIGITS = 5,
           MAX_DIGITS = 12;
         const displayEl = document.getElementById("skuDisplay");
         const noteEl = document.getElementById("skuNote");
         const enterKey = document.getElementById("enterKey");
+        const searchDisplay = document.getElementById("searchDisplay");
+        const searchForm = document.getElementById("searchForm");
 
-        // Keep the on-screen pad as the only input source: block the OS keyboard,
-        // but still allow the field to hold a caret for insertion-point placement.
-        displayEl.addEventListener("focus", () => {
-          displayEl.readOnly = false;
+        // SKU uses the device's native numeric/phone-style keyboard.
+        displayEl.addEventListener("input", () => {
+          // Keep only digits and enforce the existing 5–12 digit rule.
+          const cleaned = displayEl.value
+            .replace(/\D/g, "")
+            .slice(0, MAX_DIGITS);
+          if (displayEl.value !== cleaned) displayEl.value = cleaned;
+          refresh();
         });
-        displayEl.addEventListener("beforeinput", (e) => e.preventDefault()); // no typing/paste
-        displayEl.addEventListener("keydown", (e) => e.preventDefault());
 
-        // Dynamic font sizing: shrink until the text fits the field's width.
+        displayEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            submitSku();
+          }
+        });
+
         function fitFont() {
           const max = 40,
             min = 16;
           displayEl.style.setProperty("--sku-fs", max + "px");
-          // available inner width (minus horizontal padding)
           const cs = getComputedStyle(displayEl);
-          const avail =
-            displayEl.clientWidth -
-            parseFloat(cs.paddingLeft) -
-            parseFloat(cs.paddingRight);
           let size = max;
-          // scrollWidth grows with content; step down until it fits or we hit min
           while (size > min && displayEl.scrollWidth > displayEl.clientWidth) {
             size -= 2;
             displayEl.style.setProperty("--sku-fs", size + "px");
           }
         }
 
-        function caret() {
-          // returns [start, end] clamped to the current value length
-          const v = displayEl.value;
-          let s = displayEl.selectionStart,
-            e = displayEl.selectionEnd;
-          if (s == null) s = v.length;
-          if (e == null) e = v.length;
-          return [s, e];
-        }
-
-        function setCaret(pos) {
-          displayEl.setSelectionRange(pos, pos);
-        }
-
         function refresh() {
           const v = displayEl.value;
           const valid = v.length >= MIN_DIGITS && v.length <= MAX_DIGITS;
           enterKey.disabled = !valid;
+
           if (v.length === 0) noteEl.textContent = "Enter 5 to 12 digits";
           else if (v.length < MIN_DIGITS)
             noteEl.textContent =
@@ -1009,64 +1592,42 @@
               " needed";
           else
             noteEl.textContent = "\u2713 Ready \u2022 " + v.length + " digits";
+
           noteEl.className = "countnote" + (valid ? " good" : "");
           fitFont();
         }
 
-        function insertDigit(d) {
-          let v = displayEl.value;
-          if (v.length >= MAX_DIGITS) return; // cap at 12
-          let [s, e] = caret();
-          displayEl.value = v.slice(0, s) + d + v.slice(e);
-          setCaret(s + 1);
-          refresh();
-        }
-
-        function backspace() {
-          let v = displayEl.value;
-          let [s, e] = caret();
-          if (s !== e) {
-            // delete a selection
-            displayEl.value = v.slice(0, s) + v.slice(e);
-            setCaret(s);
-          } else if (s > 0) {
-            // delete char before caret
-            displayEl.value = v.slice(0, s - 1) + v.slice(s);
-            setCaret(s - 1);
-          }
-          refresh();
-        }
-
         function resetSku() {
           displayEl.value = "";
-          displayEl.blur();
           refresh();
         }
 
-        document.querySelectorAll(".key[data-d]").forEach((k) => {
-          // pointerdown so the field doesn't lose focus/caret to the button
-          k.addEventListener("pointerdown", (ev) => {
-            ev.preventDefault();
-            insertDigit(k.getAttribute("data-d"));
-          });
-        });
-        document
-          .getElementById("backKey")
-          .addEventListener("pointerdown", (ev) => {
-            ev.preventDefault();
-            backspace();
-          });
-        document
-          .getElementById("clearKey")
-          .addEventListener("pointerdown", (ev) => {
-            ev.preventDefault();
-            resetSku();
-          });
-        enterKey.addEventListener("click", () => {
-          const v = displayEl.value;
+        function submitSku() {
+          const v = displayEl.value.replace(/\D/g, "");
           if (v.length >= MIN_DIGITS && v.length <= MAX_DIGITS)
             showResult("Entered SKU", v);
+        }
+
+        enterKey.addEventListener("click", submitSku);
+
+        document.getElementById("clearKey").addEventListener("click", () => {
+          displayEl.value = "";
+          refresh();
+          displayEl.focus();
         });
+
+        // Search uses a normal text input, so the OS supplies the native
+        // alphanumeric keyboard on phones/tablets.
+        searchForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const value = searchDisplay.value.trim();
+          if (value) showResult("Search", value);
+        });
+
+        function resetSearch() {
+          searchDisplay.value = "";
+        }
+
         window.addEventListener("resize", fitFont);
         refresh();
       })();
