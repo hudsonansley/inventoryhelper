@@ -602,7 +602,7 @@
           ><b>Search</b><span>Search by name or other text</span></span
         >
       </button>
-      <p class="build">Build 0036 · overlay-pagehide-fix</p>
+      <p class="build">Build 0037 · strip-fnc1-control-chars</p>
     </section>
 
     <section id="scan" class="screen">
@@ -1219,14 +1219,34 @@
           rafId = requestAnimationFrame(tick);
         }
 
-        // Accept ANY barcode whose decoded value is purely numeric — no
-        // length restriction. The previous version only accepted 6/8/12/13
+        // GS1-128 barcodes (very common in retail — Code128 symbology with
+        // embedded GS1 Application Identifiers) use non-printing control
+        // characters as STRUCTURAL framing, not real data: an FNC1 marker,
+        // commonly surfaced by decoders as ASCII 28-31 (the "separator"
+        // block, most often \x1d, the Group Separator). These don't render
+        // visibly when concatenated into a log string, so a value can LOOK
+        // like clean digits ("614019602294") while still failing a strict
+        // digits-only regex — which silently rejected it before
+        // considerReading() was ever reached. Strip only this narrow,
+        // well-known control-character range (not general non-digits), so a
+        // genuinely alphanumeric barcode still correctly gets rejected.
+        function stripBarcodeControlChars(v) {
+          return typeof v === "string" ? v.replace(/[\x1c-\x1f]/g, "") : v;
+        }
+
+        // Accept ANY barcode whose CLEANED decoded value is purely numeric —
+        // no length restriction. An earlier version only accepted 6/8/12/13
         // digit strings (UPC/EAN shapes), which silently rejected valid
         // numeric barcodes of other lengths. Noise is guarded against by the
         // existing "same value on 2 consecutive frames" confirmation logic
         // in considerReading, not by an arbitrary length whitelist here.
         function isNumericOnly(v) {
-          return typeof v === "string" && v.length > 0 && /^\d+$/.test(v);
+          const cleaned = stripBarcodeControlChars(v);
+          return (
+            typeof cleaned === "string" &&
+            cleaned.length > 0 &&
+            /^\d+$/.test(cleaned)
+          );
         }
 
         function startZxing() {
@@ -1605,14 +1625,30 @@
         // Returns true when a reading is confirmed and accepted.
         function considerReading(value, format) {
           if (!running) return false;
-          if (!value || !/^\d+$/.test(value)) {
-            diag("Rejected candidate (not digits): " + value);
+          const cleaned = stripBarcodeControlChars(value);
+          if (!cleaned || !/^\d+$/.test(cleaned)) {
+            // Show char codes too — non-printing control characters are
+            // invisible in a plain log line, so if this value still gets
+            // rejected after stripping the known GS1 range, this tells us
+            // exactly what's actually in the string instead of leaving us
+            // guessing again.
+            const codes = value
+              ? Array.from(value)
+                  .map((c) => c.charCodeAt(0))
+                  .join(",")
+              : "(empty)";
+            diag(
+              "Rejected candidate (not digits): " +
+                value +
+                " | char codes: " +
+                codes,
+            );
             return false;
           }
-          if (value === lastCandidate) {
+          if (cleaned === lastCandidate) {
             candidateCount++;
           } else {
-            lastCandidate = value;
+            lastCandidate = cleaned;
             candidateCount = 1;
           }
           diag(
@@ -1621,11 +1657,11 @@
               "/" +
               REQUIRED_HITS +
               ": " +
-              value,
+              cleaned,
           );
           if (candidateCount >= REQUIRED_HITS) {
-            diag("Barcode confirmed: " + value);
-            onDecoded(value);
+            diag("Barcode confirmed: " + cleaned);
+            onDecoded(cleaned);
             return true;
           }
           return false;
