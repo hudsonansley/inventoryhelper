@@ -1,0 +1,10 @@
+{
+  "countAreas": [
+    { "code": "SLF", "name": "on the shelf" },
+    { "code": "BOS", "name": "Bottle overstock" },
+    { "code": "ADS", "name": "Aisle Display stack" },
+    { "code": "FDS", "name": "Front Display" },
+    { "code": "BCS", "name": "Basement Cases" },
+    { "code": "CBX", "name": "Cold Box" }
+  ]
+}

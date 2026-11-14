@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inventory Counter SPA</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom stacked button styling for cases */
+      .stacked-btn-container {
+        display: flex;
+        flex-direction: column;
+        width: 60px;
+        height: 56px;
+        border-radius: 0.375rem;
+        overflow: hidden;
+        border: 1px solid #cbd5e1;
+      }
+      .stacked-btn-container button {
+        flex: 1;
+        background-color: #f8fafc;
+        font-size: 0.75rem;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.15s;
+      }
+      .stacked-btn-container button:hover {
+        background-color: #e2e8f0;
+      }
+      .stacked-btn-container .btn-top {
+        border-bottom: 1px solid #cbd5e1;
+        color: #166534; /* Green for add */
+      }
+      .stacked-btn-container .btn-bottom {
+        color: #991b1b; /* Red for subtract */
+      }
+    </style>
+  </head>
+  <body class="bg-slate-100 text-slate-800 min-h-screen p-4 md:p-8">
+    <div
+      class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6"
+    >
+      <header class="mb-6 border-b pb-4">
+        <h1 class="text-2xl font-bold text-slate-900">Inventory Counter SPA</h1>
+        <p class="text-sm text-slate-500">
+          Manage counts by SKU across customizable storage locations.
+        </p>
+      </header>
+
+      <!-- SKU Management Section -->
+      <section class="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+        <div
+          class="flex flex-col sm:flex-row gap-3 items-center justify-between"
+        >
+          <!-- Dropdown & Delete -->
+          <div class="w-full sm:w-auto flex-1 flex gap-2">
+            <select
+              id="skuSelect"
+              class="flex-1 bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onchange="switchSku()"
+            >
+              <option value="" disabled selected>-- Select SKU --</option>
+            </select>
+            <button
+              onclick="deleteCurrentSku()"
+              class="bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-md text-sm font-medium hover:bg-red-100 transition"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+        <!-- New SKU Input -->
+        <div class="mt-3 flex gap-2">
+          <input
+            type="text"
+            id="newSkuInput"
+            placeholder="Enter new product SKU..."
+            class="flex-1 bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onclick="createNewSku()"
+            class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition"
+          >
+            New Count
+          </button>
+        </div>
+      </section>
+
+      <!-- Active Inventory Sheet -->
+      <section id="activeCountSection" class="hidden">
+        <div class="flex justify-between items-center mb-3">
+          <h2 id="currentSkuTitle" class="text-lg font-semibold text-blue-900">
+            SKU:
+          </h2>
+          <button
+            onclick="resetCurrentCounts()"
+            class="text-xs text-slate-500 hover:text-slate-800 underline"
+          >
+            Reset Counts
+          </button>
+        </div>
+
+        <div class="border rounded-lg overflow-hidden bg-white">
+          <div
+            class="grid grid-cols-12 bg-slate-100 text-slate-600 text-xs font-bold uppercase p-3 border-b"
+          >
+            <div class="col-span-3">Area</div>
+            <div class="col-span-4 text-center">Quantity</div>
+            <div class="col-span-5 text-center">Quick Case Controls</div>
+          </div>
+
+          <!-- Count Rows Container -->
+          <div id="countRowsContainer" class="divide-y divide-slate-100">
+            <!-- Dynamically populated rows go here -->
+          </div>
+
+          <!-- Total Row -->
+          <div
+            class="grid grid-cols-12 bg-slate-900 text-white p-3 font-bold items-center"
+          >
+            <div id="totalRowSkuLabel" class="col-span-3 truncate">TOTAL</div>
+            <div id="grandTotalDisplay" class="col-span-9 text-center text-xl">
+              0
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Empty State Message -->
+      <div id="emptyState" class="text-center py-12 text-slate-400">
+        <p>
+          Please select an existing SKU or enter a new SKU above to start
+          counting.
+        </p>
+      </div>
+    </div>
+
+    <script>
+      // ==========================================
+      // CONFIGURABLE AREAS & ABBREVIATIONS AREA
+      // ==========================================
+      // You can easily modify, add, or remove three-letter codes here.
+      const COUNT_AREAS = [
+        { code: "SLF", name: "on the shelf" },
+        { code: "BOS", name: "Bottle overstock" },
+        { code: "ADS", name: "Aisle Display stack" },
+        { code: "FDS", name: "Front Display" },
+        { code: "BCS", name: "Basement Cases" },
+        { code: "CBX", name: "Cold Box" },
+      ];
+
+      // Global Application State
+      let inventoryData =
+        JSON.parse(localStorage.getItem("spa_inventory_data")) || {};
+      let activeSku = null;
+
+      // Initialize App on Load
+      window.onload = function () {
+        updateSkuDropdown();
+      };
+
+      function saveToLocalStorage() {
+        localStorage.setItem(
+          "spa_inventory_data",
+          JSON.stringify(inventoryData),
+        );
+      }
+
+      function updateSkuDropdown() {
+        const select = document.getElementById("skuSelect");
+        const skus = Object.keys(inventoryData);
+
+        select.innerHTML =
+          '<option value="" disabled selected>-- Select SKU --</option>';
+        skus.forEach((sku) => {
+          const opt = document.createElement("option");
+          opt.value = sku;
+          opt.textContent = sku;
+          if (sku === activeSku) opt.selected = true;
+          select.appendChild(opt);
+        });
+
+        if (activeSku && inventoryData[activeSku]) {
+          document
+            .getElementById("activeCountSection")
+            .classList.remove("hidden");
+          document.getElementById("emptyState").classList.add("hidden");
+          renderCountRows();
+        } else {
+          document.getElementById("activeCountSection").classList.add("hidden");
+          document.getElementById("emptyState").classList.remove("hidden");
+        }
+      }
+
+      function createNewSku() {
+        const input = document.getElementById("newSkuInput");
+        const sku = input.value.trim().toUpperCase();
+
+        if (!sku) {
+          alert("Please enter a valid product SKU.");
+          return;
+        }
+
+        if (!inventoryData[sku]) {
+          // Initialize counts for each area to 0
+          inventoryData[sku] = {};
+          COUNT_AREAS.forEach((area) => {
+            inventoryData[sku][area.code] = 0;
+          });
+          saveToLocalStorage();
+        }
+
+        activeSku = sku;
+        input.value = "";
+        updateSkuDropdown();
+      }
+
+      function switchSku() {
+        const select = document.getElementById("skuSelect");
+        activeSku = select.value;
+        updateSkuDropdown();
+      }
+
+      function deleteCurrentSku() {
+        if (!activeSku) return;
+        if (
+          confirm(
+            `Are you sure you want to delete counts for SKU: ${activeSku}?`,
+          )
+        ) {
+          delete inventoryData[activeSku];
+          activeSku = null;
+          saveToLocalStorage();
+          updateSkuDropdown();
+        }
+      }
+
+      function renderCountRows() {
+        const container = document.getElementById("countRowsContainer");
+        container.innerHTML = "";
+
+        document.getElementById("currentSkuTitle").textContent =
+          `Active SKU: ${activeSku}`;
+        document.getElementById("totalRowSkuLabel").textContent = activeSku;
+
+        let grandTotal = 0;
+
+        COUNT_AREAS.forEach((area) => {
+          const count = inventoryData[activeSku][area.code] || 0;
+          grandTotal += count;
+
+          const row = document.createElement("div");
+          row.className =
+            "grid grid-cols-12 p-3 items-center hover:bg-slate-50 transition";
+          row.innerHTML = `
+                    <div class="col-span-3 font-mono font-bold text-slate-700" title="${area.name}">${area.code}</div>
+                    <div class="col-span-4 flex justify-center">
+                        <input type="number" value="${count}" 
+                            onchange="updateCount('${area.code}', this.value)"
+                            class="w-20 text-center border border-slate-300 rounded-md py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="col-span-5 flex justify-center gap-3">
+                        <!-- Case of 12 Stacked Button -->
+                        <div class="stacked-btn-container" title="Case of 12">
+                            <button class="btn-top" onclick="adjustCount('${area.code}', 12)">+12</button>
+                            <button class="btn-bottom" onclick="adjustCount('${area.code}', -12)">-12</button>
+                        </div>
+                        <!-- Case of 6 Stacked Button -->
+                        <div class="stacked-btn-container" title="Case of 6">
+                            <button class="btn-top" onclick="adjustCount('${area.code}', 6)">+6</button>
+                            <button class="btn-bottom" onclick="adjustCount('${area.code}', -6)">-6</button>
+                        </div>
+                    </div>
+                `;
+          container.appendChild(row);
+        });
+
+        document.getElementById("grandTotalDisplay").textContent = grandTotal;
+      }
+
+      function updateCount(areaCode, value) {
+        if (!activeSku) return;
+        const parsed = parseInt(value, 10);
+        inventoryData[activeSku][areaCode] = isNaN(parsed) ? 0 : parsed;
+        saveToLocalStorage();
+        renderCountRows();
+      }
+
+      function adjustCount(areaCode, amount) {
+        if (!activeSku) return;
+        let current = inventoryData[activeSku][areaCode] || 0;
+        let updated = current + amount;
+        if (updated < 0) updated = 0; // Prevent negative stock totals per area if desired
+        inventoryData[activeSku][areaCode] = updated;
+        saveToLocalStorage();
+        renderCountRows();
+      }
+
+      function resetCurrentCounts() {
+        if (!activeSku) return;
+        if (confirm(`Reset all counts to 0 for ${activeSku}?`)) {
+          COUNT_AREAS.forEach((area) => {
+            inventoryData[activeSku][area.code] = 0;
+          });
+          saveToLocalStorage();
+          renderCountRows();
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Inventory Counter Mobile SPA</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      button,
+      input {
+        touch-action: manipulation;
+      }
+      /* Hide native spinner arrows for clean custom mobile controls */
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-100 text-slate-800 min-h-screen p-3 md:p-8">
+    <div
+      class="max-w-xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-4 md:p-6"
+    >
+      <header class="mb-4 border-b pb-3 flex justify-between items-center">
+        <div>
+          <h1 class="text-xl md:text-2xl font-bold text-slate-900">
+            Inventory Counter
+          </h1>
+          <p class="text-xs md:text-sm text-slate-500">
+            Mobile-optimized stock tracking.
+          </p>
+        </div>
+        <div
+          id="loadingStatus"
+          class="text-[10px] md:text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200"
+        >
+          Loading...
+        </div>
+      </header>
+
+      <!-- SKU Management Section -->
+      <section class="mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+        <div class="flex gap-2 items-center">
+          <select
+            id="skuSelect"
+            class="flex-1 bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onchange="switchSku()"
+          >
+            <option value="" disabled selected>-- Select SKU --</option>
+          </select>
+          <button
+            onclick="deleteCurrentSku()"
+            class="bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-md text-sm font-medium active:bg-red-200 transition"
+          >
+            Delete
+          </button>
+          <button
+            onclick="clearAllCounts()"
+            class="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-2 rounded-md text-sm font-medium active:bg-amber-200 transition"
+          >
+            Clear All
+          </button>
+        </div>
+        <div class="mt-2 flex gap-2">
+          <input
+            type="text"
+            id="newSkuInput"
+            placeholder="Enter product SKU..."
+            class="flex-1 bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onclick="createNewSku()"
+            class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium active:bg-blue-700 transition"
+          >
+            New
+          </button>
+        </div>
+      </section>
+
+      <!-- Active Inventory Sheet -->
+      <section id="activeCountSection" class="hidden">
+        <div class="flex justify-between items-center mb-2">
+          <h2
+            id="currentSkuTitle"
+            class="text-sm md:text-base font-semibold text-blue-900 truncate"
+          >
+            SKU:
+          </h2>
+        </div>
+
+        <div class="border rounded-lg overflow-hidden bg-white">
+          <div
+            class="grid grid-cols-12 bg-slate-100 text-slate-600 text-[10px] md:text-xs font-bold uppercase p-2 border-b text-center"
+          >
+            <div class="col-span-2 text-left">Area</div>
+            <div class="col-span-3">Base</div>
+            <div class="col-span-2">C-12</div>
+            <div class="col-span-2">C-6</div>
+            <div class="col-span-3 text-right">Total</div>
+          </div>
+
+          <!-- Count Rows Container -->
+          <div id="countRowsContainer" class="divide-y divide-slate-100">
+            <!-- Rows populated dynamically -->
+          </div>
+
+          <!-- Grand Total Row -->
+          <div
+            class="grid grid-cols-12 bg-slate-900 text-white p-3 font-bold items-center"
+          >
+            <div id="totalRowSkuLabel" class="col-span-9 truncate text-sm">
+              TOTAL
+            </div>
+            <div
+              id="grandTotalDisplay"
+              class="col-span-3 text-right text-lg md:text-xl"
+            >
+              0
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Empty State Message -->
+      <div id="emptyState" class="text-center py-12 text-slate-400 text-sm">
+        <p>Select or create an SKU above to begin counting.</p>
+      </div>
+    </div>
+
+    <script>
+      let COUNT_AREAS = [];
+      let inventoryData =
+        JSON.parse(localStorage.getItem("spa_inventory_data")) || {};
+      let activeSku = null;
+
+      window.onload = async function () {
+        await loadConfiguration();
+        updateSkuDropdown();
+      };
+
+      async function loadConfiguration() {
+        const statusBadge = document.getElementById("loadingStatus");
+        try {
+          const response = await fetch("config.json");
+          if (!response.ok) throw new Error("Failed to load config.json");
+          const config = await response.json();
+          COUNT_AREAS = config.countAreas || [];
+          statusBadge.textContent = "Ready";
+          statusBadge.className =
+            "text-[10px] md:text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200";
+        } catch (error) {
+          console.error("Config error:", error);
+          statusBadge.textContent = "Config Error (Check Server)";
+          statusBadge.className =
+            "text-[10px] md:text-xs font-semibold text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-200";
+        }
+      }
+
+      function saveToLocalStorage() {
+        localStorage.setItem(
+          "spa_inventory_data",
+          JSON.stringify(inventoryData),
+        );
+      }
+
+      function updateSkuDropdown() {
+        const select = document.getElementById("skuSelect");
+        const skus = Object.keys(inventoryData);
+
+        select.innerHTML =
+          '<option value="" disabled selected>-- Select SKU --</option>';
+        skus.forEach((sku) => {
+          const opt = document.createElement("option");
+          opt.value = sku;
+          opt.textContent = sku;
+          if (sku === activeSku) opt.selected = true;
+          select.appendChild(opt);
+        });
+
+        if (activeSku && inventoryData[activeSku]) {
+          document
+            .getElementById("activeCountSection")
+            .classList.remove("hidden");
+          document.getElementById("emptyState").classList.add("hidden");
+          renderCountRows();
+        } else {
+          document.getElementById("activeCountSection").classList.add("hidden");
+          document.getElementById("emptyState").classList.add("hidden"); // Fixed empty state visibility
+        }
+      }
+
+      function createNewSku() {
+        const input = document.getElementById("newSkuInput");
+        const sku = input.value.trim().toUpperCase();
+
+        if (!sku) {
+          alert("Please enter a valid product SKU.");
+          return;
+        }
+
+        if (!inventoryData[sku]) {
+          inventoryData[sku] = {};
+          COUNT_AREAS.forEach((area) => {
+            inventoryData[sku][area.code] = { base: 0, cases12: 0, cases6: 0 };
+          });
+          saveToLocalStorage();
+        }
+
+        activeSku = sku;
+        input.value = "";
+        updateSkuDropdown();
+      }
+
+      function switchSku() {
+        const select = document.getElementById("skuSelect");
+        activeSku = select.value;
+        updateSkuDropdown();
+      }
+
+      function deleteCurrentSku() {
+        if (!activeSku) return;
+        if (confirm(`Delete counts for SKU: ${activeSku}?`)) {
+          delete inventoryData[activeSku];
+          activeSku = null;
+          saveToLocalStorage();
+          updateSkuDropdown();
+        }
+      }
+
+      function clearAllCounts() {
+        if (!activeSku) return;
+        if (confirm(`Clear all counts for SKU: ${activeSku}?`)) {
+          COUNT_AREAS.forEach((area) => {
+            inventoryData[activeSku][area.code] = {
+              base: 0,
+              cases12: 0,
+              cases6: 0,
+            };
+          });
+          saveToLocalStorage();
+          renderCountRows();
+        }
+      }
+
+      function renderCountRows() {
+        const container = document.getElementById("countRowsContainer");
+        container.innerHTML = "";
+
+        document.getElementById("currentSkuTitle").textContent =
+          `SKU: ${activeSku}`;
+        document.getElementById("totalRowSkuLabel").textContent = activeSku;
+
+        let grandTotal = 0;
+
+        COUNT_AREAS.forEach((area) => {
+          if (
+            !inventoryData[activeSku][area.code] ||
+            typeof inventoryData[activeSku][area.code] !== "object"
+          ) {
+            inventoryData[activeSku][area.code] = {
+              base: 0,
+              cases12: 0,
+              cases6: 0,
+            };
+          }
+
+          const data = inventoryData[activeSku][area.code];
+          const base = data.base || 0;
+          const cases12 = data.cases12 || 0;
+          const cases6 = data.cases6 || 0;
+
+          const rowTotal = base + cases12 * 12 + cases6 * 6;
+          grandTotal += rowTotal;
+
+          const row = document.createElement("div");
+          row.className =
+            "grid grid-cols-12 p-2.5 items-center hover:bg-slate-50 transition text-center";
+          row.innerHTML = `
+                    <div class="col-span-2 font-mono font-bold text-slate-700 text-left text-xs md:text-sm" title="${area.name}">${area.code}</div>
+                    
+                    <!-- Base Spinner -->
+                    <div class="col-span-3 flex items-center justify-center">
+                        <div class="flex items-center border border-slate-300 rounded-md overflow-hidden bg-slate-50">
+                            <button type="button" onclick="adjustValue('${area.code}', 'base', -1)" class="px-1.5 py-1 bg-slate-200 text-slate-700 text-xs font-bold active:bg-slate-300">-</button>
+                            <input type="number" value="${base}" min="0" data-area="${area.code}" data-field="base"
+                                onclick="this.select()"
+                                oninput="handleDirectInput(this)"
+                                class="w-8 text-center bg-transparent text-xs font-semibold focus:outline-none focus:bg-white">
+                            <button type="button" onclick="adjustValue('${area.code}', 'base', 1)" class="px-1.5 py-1 bg-slate-200 text-slate-700 text-xs font-bold active:bg-slate-300">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Cases 12 Spinner -->
+                    <div class="col-span-2 flex items-center justify-center">
+                        <div class="flex items-center border border-slate-300 rounded-md overflow-hidden bg-slate-50">
+                            <button type="button" onclick="adjustValue('${area.code}', 'cases12', -1)" class="px-1 py-1 bg-slate-200 text-slate-700 text-[10px] font-bold active:bg-slate-300">-</button>
+                            <input type="number" value="${cases12}" min="0" data-area="${area.code}" data-field="cases12"
+                                onclick="this.select()"
+                                oninput="handleDirectInput(this)"
+                                class="w-6 text-center bg-transparent text-xs font-semibold focus:outline-none focus:bg-white">
+                            <button type="button" onclick="adjustValue('${area.code}', 'cases12', 1)" class="px-1 py-1 bg-slate-200 text-slate-700 text-[10px] font-bold active:bg-slate-300">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Cases 6 Spinner -->
+                    <div class="col-span-2 flex items-center justify-center">
+                        <div class="flex items-center border border-slate-300 rounded-md overflow-hidden bg-slate-50">
+                            <button type="button" onclick="adjustValue('${area.code}', 'cases6', -1)" class="px-1 py-1 bg-slate-200 text-slate-700 text-[10px] font-bold active:bg-slate-300">-</button>
+                            <input type="number" value="${cases6}" min="0" data-area="${area.code}" data-field="cases6"
+                                onclick="this.select()"
+                                oninput="handleDirectInput(this)"
+                                class="w-6 text-center bg-transparent text-xs font-semibold focus:outline-none focus:bg-white">
+                            <button type="button" onclick="adjustValue('${area.code}', 'cases6', 1)" class="px-1 py-1 bg-slate-200 text-slate-700 text-[10px] font-bold active:bg-slate-300">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Row Total Column -->
+                    <div id="rowTotal-${area.code}" class="col-span-3 text-right font-bold text-slate-800 text-sm md:text-base">
+                        ${rowTotal}
+                    </div>
+                `;
+          container.appendChild(row);
+        });
+
+        document.getElementById("grandTotalDisplay").textContent = grandTotal;
+      }
+
+      function adjustValue(areaCode, field, delta) {
+        if (!activeSku) return;
+        let current = inventoryData[activeSku][areaCode][field] || 0;
+        let updated = current + delta;
+        if (updated < 0) updated = 0;
+        inventoryData[activeSku][areaCode][field] = updated;
+        saveToLocalStorage();
+        renderCountRows();
+      }
+
+      function handleDirectInput(inputElement) {
+        if (!activeSku) return;
+        const areaCode = inputElement.getAttribute("data-area");
+        const field = inputElement.getAttribute("data-field");
+
+        const parsed = parseInt(inputElement.value, 10);
+        inventoryData[activeSku][areaCode][field] =
+          isNaN(parsed) || parsed < 0 ? 0 : parsed;
+        saveToLocalStorage();
+
+        // Recalculate this specific row's total
+        let data = inventoryData[activeSku][areaCode];
+        let base = data.base || 0;
+        let cases12 = data.cases12 || 0;
+        let cases6 = data.cases6 || 0;
+        let rowTotal = base + cases12 * 12 + cases6 * 6;
+
+        // Update row total display live
+        const rowTotalElem = document.getElementById(`rowTotal-${areaCode}`);
+        if (rowTotalElem) {
+          rowTotalElem.textContent = rowTotal;
+        }
+
+        // Recalculate and update grand total live across all areas
+        let grandTotal = 0;
+        COUNT_AREAS.forEach((area) => {
+          let aData = inventoryData[activeSku][area.code];
+          let aBase = aData.base || 0;
+          let a12 = aData.cases12 || 0;
+          let a6 = aData.cases6 || 0;
+          grandTotal += aBase + a12 * 12 + a6 * 6;
+        });
+        document.getElementById("grandTotalDisplay").textContent = grandTotal;
+      }
+    </script>
+  </body>
+</html>
