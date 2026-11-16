@@ -95,33 +95,31 @@
             SKU:
           </h2>
         </div>
-
         <div class="border rounded-lg overflow-hidden bg-white">
+          <!-- Header Grid Matches Row Columns Exactly -->
           <div
-            class="grid grid-cols-12 bg-slate-100 text-slate-600 text-[10px] md:text-xs font-bold uppercase p-2 border-b text-center"
+            class="grid grid-cols-12 gap-1.5 bg-slate-100 text-slate-600 text-[10px] md:text-xs font-bold uppercase p-2 border-b text-center"
           >
             <div class="col-span-2 text-left">Area</div>
-            <div class="col-span-3">Base</div>
-            <div class="col-span-2">C-12</div>
-            <div class="col-span-2">C-6</div>
-            <div class="col-span-3 text-right">Total</div>
+            <div class="col-span-3 text-center">Base</div>
+            <div class="col-span-3 text-center">C-12</div>
+            <div class="col-span-3 text-center">C-6</div>
+            <div class="col-span-1 text-right">Total</div>
           </div>
-
           <!-- Count Rows Container -->
           <div id="countRowsContainer" class="divide-y divide-slate-100">
             <!-- Rows populated dynamically -->
           </div>
-
           <!-- Grand Total Row -->
           <div
             class="grid grid-cols-12 bg-slate-900 text-white p-3 font-bold items-center"
           >
-            <div id="totalRowSkuLabel" class="col-span-9 truncate text-sm">
+            <div id="totalRowSkuLabel" class="col-span-11 truncate text-sm">
               TOTAL
             </div>
             <div
               id="grandTotalDisplay"
-              class="col-span-3 text-right text-lg md:text-xl"
+              class="col-span-1 text-right text-lg md:text-xl"
             >
               0
             </div>
@@ -174,7 +172,6 @@
       function updateSkuDropdown() {
         const select = document.getElementById("skuSelect");
         const skus = Object.keys(inventoryData);
-
         select.innerHTML =
           '<option value="" disabled selected>-- Select SKU --</option>';
         skus.forEach((sku) => {
@@ -193,19 +190,17 @@
           renderCountRows();
         } else {
           document.getElementById("activeCountSection").classList.add("hidden");
-          document.getElementById("emptyState").classList.add("hidden"); // Fixed empty state visibility
+          document.getElementById("emptyState").classList.add("hidden");
         }
       }
 
       function createNewSku() {
         const input = document.getElementById("newSkuInput");
         const sku = input.value.trim().toUpperCase();
-
         if (!sku) {
           alert("Please enter a valid product SKU.");
           return;
         }
-
         if (!inventoryData[sku]) {
           inventoryData[sku] = {};
           COUNT_AREAS.forEach((area) => {
@@ -213,7 +208,6 @@
           });
           saveToLocalStorage();
         }
-
         activeSku = sku;
         input.value = "";
         updateSkuDropdown();
@@ -253,11 +247,9 @@
       function renderCountRows() {
         const container = document.getElementById("countRowsContainer");
         container.innerHTML = "";
-
         document.getElementById("currentSkuTitle").textContent =
           `SKU: ${activeSku}`;
         document.getElementById("totalRowSkuLabel").textContent = activeSku;
-
         let grandTotal = 0;
 
         COUNT_AREAS.forEach((area) => {
@@ -276,57 +268,48 @@
           const base = data.base || 0;
           const cases12 = data.cases12 || 0;
           const cases6 = data.cases6 || 0;
-
           const rowTotal = base + cases12 * 12 + cases6 * 6;
           grandTotal += rowTotal;
 
           const row = document.createElement("div");
           row.className =
-            "grid grid-cols-12 p-2.5 items-center hover:bg-slate-50 transition text-center";
+            "grid grid-cols-12 gap-1.5 p-2.5 items-center hover:bg-slate-50 transition text-center";
           row.innerHTML = `
-                    <div class="col-span-2 font-mono font-bold text-slate-700 text-left text-xs md:text-sm" title="${area.name}">${area.code}</div>
-                    
-                    <!-- Base Spinner -->
-                    <div class="col-span-3 flex items-center justify-center">
-                        <div class="flex items-center border border-slate-300 rounded-md overflow-hidden bg-slate-50">
-                            <button type="button" onclick="adjustValue('${area.code}', 'base', -1)" class="px-1.5 py-1 bg-slate-200 text-slate-700 text-xs font-bold active:bg-slate-300">-</button>
-                            <input type="number" value="${base}" min="0" data-area="${area.code}" data-field="base"
-                                onclick="this.select()"
-                                oninput="handleDirectInput(this)"
-                                class="w-8 text-center bg-transparent text-xs font-semibold focus:outline-none focus:bg-white">
-                            <button type="button" onclick="adjustValue('${area.code}', 'base', 1)" class="px-1.5 py-1 bg-slate-200 text-slate-700 text-xs font-bold active:bg-slate-300">+</button>
-                        </div>
-                    </div>
+          <!-- Area Code (col-span-2) -->
+          <div class="col-span-2 font-mono font-bold text-slate-700 text-left text-xs md:text-sm truncate" title="${area.name}">${area.code}</div>
+          
+          <!-- Base Spinner (col-span-3 - Equal width) -->
+          <div class="col-span-3 flex items-center">
+            <div class="flex w-full items-center border border-slate-300 rounded-md overflow-hidden bg-slate-50">
+              <button type="button" onclick="adjustValue('${area.code}', 'base', -1)" class="px-2 py-1 bg-slate-200 text-slate-700 text-xs font-bold active:bg-slate-300 shrink-0">-</button>
+              <input type="number" value="${base}" min="0" data-area="${area.code}" data-field="base" onclick="this.select()" oninput="handleDirectInput(this)" class="w-full min-w-0 text-center bg-transparent text-xs font-semibold focus:outline-none focus:bg-white">
+              <button type="button" onclick="adjustValue('${area.code}', 'base', 1)" class="px-2 py-1 bg-slate-200 text-slate-700 text-xs font-bold active:bg-slate-300 shrink-0">+</button>
+            </div>
+          </div>
 
-                    <!-- Cases 12 Spinner -->
-                    <div class="col-span-2 flex items-center justify-center">
-                        <div class="flex items-center border border-slate-300 rounded-md overflow-hidden bg-slate-50">
-                            <button type="button" onclick="adjustValue('${area.code}', 'cases12', -1)" class="px-1 py-1 bg-slate-200 text-slate-700 text-[10px] font-bold active:bg-slate-300">-</button>
-                            <input type="number" value="${cases12}" min="0" data-area="${area.code}" data-field="cases12"
-                                onclick="this.select()"
-                                oninput="handleDirectInput(this)"
-                                class="w-6 text-center bg-transparent text-xs font-semibold focus:outline-none focus:bg-white">
-                            <button type="button" onclick="adjustValue('${area.code}', 'cases12', 1)" class="px-1 py-1 bg-slate-200 text-slate-700 text-[10px] font-bold active:bg-slate-300">+</button>
-                        </div>
-                    </div>
+          <!-- Cases 12 Spinner (col-span-3 - Equal width) -->
+          <div class="col-span-3 flex items-center">
+            <div class="flex w-full items-center border border-slate-300 rounded-md overflow-hidden bg-slate-50">
+              <button type="button" onclick="adjustValue('${area.code}', 'cases12', -1)" class="px-2 py-1 bg-slate-200 text-slate-700 text-xs font-bold active:bg-slate-300 shrink-0">-</button>
+              <input type="number" value="${cases12}" min="0" data-area="${area.code}" data-field="cases12" onclick="this.select()" oninput="handleDirectInput(this)" class="w-full min-w-0 text-center bg-transparent text-xs font-semibold focus:outline-none focus:bg-white">
+              <button type="button" onclick="adjustValue('${area.code}', 'cases12', 1)" class="px-2 py-1 bg-slate-200 text-slate-700 text-xs font-bold active:bg-slate-300 shrink-0">+</button>
+            </div>
+          </div>
 
-                    <!-- Cases 6 Spinner -->
-                    <div class="col-span-2 flex items-center justify-center">
-                        <div class="flex items-center border border-slate-300 rounded-md overflow-hidden bg-slate-50">
-                            <button type="button" onclick="adjustValue('${area.code}', 'cases6', -1)" class="px-1 py-1 bg-slate-200 text-slate-700 text-[10px] font-bold active:bg-slate-300">-</button>
-                            <input type="number" value="${cases6}" min="0" data-area="${area.code}" data-field="cases6"
-                                onclick="this.select()"
-                                oninput="handleDirectInput(this)"
-                                class="w-6 text-center bg-transparent text-xs font-semibold focus:outline-none focus:bg-white">
-                            <button type="button" onclick="adjustValue('${area.code}', 'cases6', 1)" class="px-1 py-1 bg-slate-200 text-slate-700 text-[10px] font-bold active:bg-slate-300">+</button>
-                        </div>
-                    </div>
+          <!-- Cases 6 Spinner (col-span-3 - Equal width) -->
+          <div class="col-span-3 flex items-center">
+            <div class="flex w-full items-center border border-slate-300 rounded-md overflow-hidden bg-slate-50">
+              <button type="button" onclick="adjustValue('${area.code}', 'cases6', -1)" class="px-2 py-1 bg-slate-200 text-slate-700 text-xs font-bold active:bg-slate-300 shrink-0">-</button>
+              <input type="number" value="${cases6}" min="0" data-area="${area.code}" data-field="cases6" onclick="this.select()" oninput="handleDirectInput(this)" class="w-full min-w-0 text-center bg-transparent text-xs font-semibold focus:outline-none focus:bg-white">
+              <button type="button" onclick="adjustValue('${area.code}', 'cases6', 1)" class="px-2 py-1 bg-slate-200 text-slate-700 text-xs font-bold active:bg-slate-300 shrink-0">+</button>
+            </div>
+          </div>
 
-                    <!-- Row Total Column -->
-                    <div id="rowTotal-${area.code}" class="col-span-3 text-right font-bold text-slate-800 text-sm md:text-base">
-                        ${rowTotal}
-                    </div>
-                `;
+          <!-- Row Total Column (col-span-1) -->
+          <div id="rowTotal-${area.code}" class="col-span-1 text-right font-bold text-slate-800 text-sm md:text-base">
+            ${rowTotal}
+          </div>
+        `;
           container.appendChild(row);
         });
 
@@ -347,26 +330,22 @@
         if (!activeSku) return;
         const areaCode = inputElement.getAttribute("data-area");
         const field = inputElement.getAttribute("data-field");
-
         const parsed = parseInt(inputElement.value, 10);
         inventoryData[activeSku][areaCode][field] =
           isNaN(parsed) || parsed < 0 ? 0 : parsed;
         saveToLocalStorage();
 
-        // Recalculate this specific row's total
         let data = inventoryData[activeSku][areaCode];
         let base = data.base || 0;
         let cases12 = data.cases12 || 0;
         let cases6 = data.cases6 || 0;
         let rowTotal = base + cases12 * 12 + cases6 * 6;
 
-        // Update row total display live
         const rowTotalElem = document.getElementById(`rowTotal-${areaCode}`);
         if (rowTotalElem) {
           rowTotalElem.textContent = rowTotal;
         }
 
-        // Recalculate and update grand total live across all areas
         let grandTotal = 0;
         COUNT_AREAS.forEach((area) => {
           let aData = inventoryData[activeSku][area.code];
